@@ -3,9 +3,9 @@ import Link from 'next/link'
 
 export const Footer: React.FC = () => {
   const footerLinks = [
-    { label: 'Privacy Policy', href: '/privacy' },
-    { label: 'Terms of Service', href: '/terms' },
-    { label: 'Contact', href: '/contact' },
+    { label: 'Privacy Policy', href: '#' },
+    { label: 'Terms of Service', href: '#' },
+    { label: 'Contact', href: '#' },
   ]
 
   const currentYear = new Date().getFullYear()

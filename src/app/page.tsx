@@ -3,7 +3,7 @@ import Footer from '@/components/footer'
 import Hero from '@/components/hero'
 import MeetTheExperts from '@/components/meet-experts'
 import Navbar from '@/components/Navbar'
-import ReserveAccessSection from '@/components/reserve-access'
+import ReserveAccessSection from '@/components/Booking/reserve-access'
 import TrustedByInvestors from '@/components/trust'
 import WhatYouWillMaster from '@/components/what-master'
 
@@ -12,11 +12,19 @@ export default function Home() {
     <>
       <Navbar />
       <Hero />
-      <WhatYouWillMaster />
-      <MeetTheExperts />
-      <ReserveAccessSection />
+      <section id='what-you-will-master'>
+        <WhatYouWillMaster />
+      </section>
+      <section id='meet-the-experts'>
+        <MeetTheExperts />
+      </section>
+      <section id='reserve-access'>
+        <ReserveAccessSection />
+      </section>
       <TrustedByInvestors />
-      <FAQ />
+      <section id='faq'>
+        <FAQ />
+      </section>
       <Footer />
     </>
   )
