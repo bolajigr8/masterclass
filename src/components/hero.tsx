@@ -1,112 +1,187 @@
 'use client'
 
-import React from 'react'
-import { Calendar, ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { ArrowRight, Play } from 'lucide-react'
+import { useSmoothScroll } from '@/hooks/useSmoothScroll'
 
-interface HeroProps {
-  onRegisterClick?: () => void
-  onViewDatesClick?: () => void
-}
+const cities =
+  'Lagos · Dubai · Singapore · London · New York · Toronto · Abuja · Accra · Nairobi · Johannesburg + Worldwide Zoom Webinars'
 
-export const Hero: React.FC<HeroProps> = ({
-  onRegisterClick,
-  onViewDatesClick,
-}) => {
-  const handleRegisterClick = () => {
-    if (onRegisterClick) {
-      onRegisterClick()
-      return
-    }
+export default function Hero() {
+  const [mounted, setMounted] = useState(false)
+  const { scrollTo } = useSmoothScroll()
 
-    if (typeof window !== 'undefined') {
-      const target = document.getElementById('reserve-access')
-
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth' })
-        return
-      }
-
-      window.location.href = '/finalize-enrollment'
-    }
-  }
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60)
+    return () => clearTimeout(t)
+  }, [])
 
   return (
-    <section className='relative w-full overflow-hidden min-h-[80vh] lg:min-h-screen'>
+    <section
+      id='hero'
+      className='relative  min-h-screen w-full flex flex-col overflow-hidden bg-[#050b18]'
+    >
       {/* Background Image */}
       <div className='absolute inset-0 z-0'>
         <Image
           src='/hero-pic.png'
           alt='City skyline background'
           fill
-          className='object-cover'
           priority
+          className='object-cover object-center opacity-30'
         />
-        {/* Overlay - gradient to white in light mode, dark overlay in dark mode */}
-        {/* <div className='absolute inset-0 bg-linear-to-b from-black/40 via-black/30 to-white dark:bg-black/60' /> */}
+        <div className='absolute inset-0 bg-gradient-to-b from-[#050b18]/70 via-[#060c1a]/50 to-[#050b18]/95' />
+        <div className='absolute inset-0 bg-gradient-to-r from-[#050b18]/60 via-transparent to-[#050b18]/60' />
       </div>
 
-      {/* Content */}
-      <div className='relative z-10 flex h-full flex-col justify-center pt-24 px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32'>
-        <div className='max-w-3xl'>
-          {/* Main Heading */}
-          <h1 className='mb-6 text-3xl font-bold leading-tight text-white sm:text-4xl md:text-5xl lg:text-6xl'>
-            Unlock Structured
-            <br />
-            Property Ownership with
-            <br />
-            <span className='text-blue-500 dark:text-blue-400'>Trila</span>
-          </h1>
+      {/* Subtle grid pattern */}
+      <div
+        className='absolute inset-0 z-[1] opacity-[0.04]'
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+        }}
+      />
 
-          {/* Subheading */}
-          <p className='mb-8 text-base leading-relaxed text-gray-300 sm:text-lg'>
-            Learn how infrastructure-backed real estate can generate rental
-            <br className='hidden sm:block' />
-            income without traditional ownership barriers. Book your
-            <br className='hidden sm:block' />
-            masterclass in under 60 seconds.
-          </p>
+      {/* Decorative building icon */}
+      <div className='absolute top-24 right-12 z-[2] opacity-10 hidden lg:block'>
+        <svg width='80' height='100' viewBox='0 0 80 100' fill='none'>
+          <rect
+            x='10'
+            y='20'
+            width='60'
+            height='80'
+            stroke='white'
+            strokeWidth='2'
+          />
+          <rect
+            x='20'
+            y='30'
+            width='12'
+            height='15'
+            stroke='white'
+            strokeWidth='1.5'
+          />
+          <rect
+            x='48'
+            y='30'
+            width='12'
+            height='15'
+            stroke='white'
+            strokeWidth='1.5'
+          />
+          <rect
+            x='20'
+            y='55'
+            width='12'
+            height='15'
+            stroke='white'
+            strokeWidth='1.5'
+          />
+          <rect
+            x='48'
+            y='55'
+            width='12'
+            height='15'
+            stroke='white'
+            strokeWidth='1.5'
+          />
+          <rect
+            x='30'
+            y='75'
+            width='20'
+            height='25'
+            stroke='white'
+            strokeWidth='1.5'
+          />
+        </svg>
+      </div>
 
-          {/* CTA Buttons */}
-          <div className='flex flex-col items-start gap-4 sm:flex-row'>
-            <button
-              onClick={handleRegisterClick}
-              className='group flex items-center gap-2 rounded-md bg-blue-500 px-6 py-3 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-600 dark:shadow-blue-900/30 dark:hover:bg-blue-700'
-            >
-              Register for Masterclass
-              <span className='transition-transform duration-200 group-hover:translate-x-1'>
-                →
-              </span>
-            </button>
+      {/* Main content */}
+      <div className='relative z-10 flex flex-col items-center justify-center flex-1 text-center px-5 pt-24 pb-16 lg:pt-26 lg:pb-24'>
+        {/* Badge */}
+        <div
+          className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full border border-white/15 bg-[#0d1a2e]/80 backdrop-blur-sm mb-10 transition-all duration-700 ${
+            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+          style={{ transitionDelay: '100ms' }}
+        >
+          <span className='w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse flex-shrink-0' />
+          <span className='text-[11px] sm:text-[12px] font-bold tracking-[0.12em] text-white/90 uppercase'>
+            Masterclass 2026 — Unlocking the $300 Trillion Gated Asset Class
+          </span>
+        </div>
 
-            <button
-              onClick={onViewDatesClick}
-              className='flex items-center gap-2 rounded-md border-2 border-gray-300 bg-transparent px-6 py-3 text-base font-semibold  transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 dark:border-gray-600 text-white hover:bg-gray-800'
-            >
-              <Calendar className='h-5 w-5' />
-              View Available Dates
-            </button>
-          </div>
+        {/* Headline */}
+        <h1
+          className={`font-extrabold text-white leading-[1.05] tracking-tight max-w-[800px] transition-all duration-700 ${
+            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+          }`}
+          style={{
+            transitionDelay: '200ms',
+            fontSize: 'clamp(36px, 6vw, 80px)',
+          }}
+        >
+          Become a Real Developer
+          <br />
+          <span className='text-[#2563eb]'>or Global Landlord</span>
+          <br />— in Days, Not Decades
+        </h1>
+
+        {/* Subheading */}
+        <p
+          className={`mt-6 text-[16px] sm:text-[18px] text-white/60 font-medium transition-all duration-700 ${
+            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+          style={{ transitionDelay: '340ms' }}
+        >
+          Masterclass 2026 — Live &amp; Virtual
+        </p>
+
+        {/* Cities */}
+        <p
+          className={`mt-3 text-[13px] sm:text-[15px] text-white/45 max-w-[640px] leading-relaxed transition-all duration-700 ${
+            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+          style={{ transitionDelay: '420ms' }}
+        >
+          {cities}
+        </p>
+
+        {/* CTA Buttons */}
+        <div
+          className={`mt-10 flex flex-col sm:flex-row items-center gap-4 transition-all duration-700 ${
+            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+          style={{ transitionDelay: '520ms' }}
+        >
+          <button
+            onClick={() => scrollTo('reserve-access')}
+            className='group flex items-center gap-3 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[15px] sm:text-[16px] font-bold px-7 py-4 rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(37,99,235,0.55)] active:scale-[0.97] w-full sm:w-auto justify-center min-w-[280px] focus:outline-none'
+          >
+            Secure Your Seat — Limited Capacity
+            <ArrowRight
+              size={18}
+              className='transition-transform duration-200 group-hover:translate-x-1'
+            />
+          </button>
+
+          <button
+            onClick={() => scrollTo('reserve-access')}
+            className='group flex items-center gap-3 bg-white/8 hover:bg-white/12 border border-white/20 hover:border-white/30 text-white text-[15px] sm:text-[16px] font-semibold px-7 py-4 rounded-full backdrop-blur-sm transition-all duration-300 active:scale-[0.97] w-full sm:w-auto justify-center min-w-[280px] focus:outline-none'
+          >
+            <Play
+              size={14}
+              className='fill-[#f59e0b] text-[#f59e0b] transition-transform duration-200 group-hover:scale-110'
+            />
+            Book Private Consulting Call
+          </button>
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className='absolute bottom-2 left-1/2 z-10 -translate-x-1/2 animate-bounce'>
-        <button
-          onClick={() => {
-            window.scrollTo({
-              top: window.innerHeight,
-              behavior: 'smooth',
-            })
-          }}
-          className='flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-400 text-gray-900 transition-colors hover:border-gray-600 hover:bg-gray-100 dark:border-gray-500 dark:text-white dark:hover:border-gray-400 dark:hover:bg-gray-800'
-          aria-label='Scroll down'
-        >
-          <ChevronDown className='h-6 w-6' />
-        </button>
-      </div>
+      {/* Bottom fade */}
+      <div className='absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050b18] to-transparent z-[5]' />
     </section>
   )
 }
-
-export default Hero

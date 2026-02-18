@@ -1,144 +1,197 @@
 'use client'
-import React from 'react'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
-import { useState } from 'react'
-import { ThemeToggle } from './theme-toggle'
+import Image from 'next/image'
+import { X, Menu, Play } from 'lucide-react'
+import { useSmoothScroll } from '@/hooks/useSmoothScroll'
 
-interface NavbarProps {
-  onRegisterClick?: () => void
-}
+const navLinks = [
+  { label: 'Programme', sectionId: 'programme' },
+  { label: 'Pricing', sectionId: 'pricing' },
+  { label: 'Testimonials', sectionId: 'testimonials' },
+  { label: 'Contact', sectionId: 'contact' },
+]
 
-export const Navbar: React.FC<NavbarProps> = ({ onRegisterClick }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const { scrollTo } = useSmoothScroll()
 
-  const navItems = [
-    { label: 'About', href: '#what-you-will-master' },
-    { label: 'Speakers', href: '#meet-the-experts' },
-    { label: 'Register', href: '#reserve-access' },
-    { label: 'FAQ', href: '#faq' },
-  ]
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
-  const handleNavClick = (
-    e: React.MouseEvent<HTMLAnchorElement>,
-    href: string,
-  ) => {
-    if (href.startsWith('#')) {
-      e.preventDefault()
-      const element = document.querySelector(href)
-      if (element) {
-        const offset = 80 // Account for fixed navbar height
-        const elementPosition = element.getBoundingClientRect().top
-        const offsetPosition = elementPosition + window.pageYOffset - offset
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth',
-        })
-      }
-      setMobileMenuOpen(false)
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
     }
-  }
+  }, [isOpen])
 
-  const handleRegisterClick = () => {
-    const element = document.querySelector('#reserve-access')
-    if (element) {
-      const offset = 80
-      const elementPosition = element.getBoundingClientRect().top
-      const offsetPosition = elementPosition + window.pageYOffset - offset
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth',
-      })
-    }
-    onRegisterClick?.()
-    setMobileMenuOpen(false)
+  const handleNavClick = (sectionId: string) => {
+    // Delay scroll slightly on mobile so the drawer finishes closing first
+    const delay = isOpen ? 320 : 0
+    setIsOpen(false)
+    setTimeout(() => scrollTo(sectionId), delay)
   }
 
   return (
-    <nav className='fixed top-0 z-50 w-full border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950'>
-      <div className='mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-12 md:px-16 lg:px-24 xl:px-32'>
-        {/* Logo */}
-        <Link
-          href='/'
-          className='text-xl font-bold text-gray-900 dark:text-white'
-        >
-          Trila
-        </Link>
-
-        {/* Desktop Navigation */}
-        <div className='hidden items-center gap-8 md:flex'>
-          {/* Nav Links */}
-          <div className='flex items-center gap-8'>
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className='text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white cursor-pointer'
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-
-          {/* Dark Mode Toggle */}
-          <ThemeToggle />
-
-          {/* Register Button */}
-          <button
-            onClick={handleRegisterClick}
-            className='rounded-md bg-blue-500 px-6 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-600 dark:shadow-blue-900/30 dark:hover:bg-blue-700'
-          >
-            Register
-          </button>
-        </div>
-
-        {/* Mobile Controls */}
-        <div className='flex items-center gap-2 md:hidden'>
-          <ThemeToggle />
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label='Toggle menu'
-            className='inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-900 shadow-xs transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800'
-          >
-            {mobileMenuOpen ? (
-              <X className='h-5 w-5' />
-            ) : (
-              <Menu className='h-5 w-5' />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className='border-t border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 md:hidden'>
-          <div className='space-y-1 px-6 pb-4 pt-2'>
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className='block rounded-md px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-white cursor-pointer'
-              >
-                {item.label}
-              </a>
-            ))}
-
-            {/* Mobile Register Button */}
+    <>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled
+            ? 'bg-[#080d1a]/90 backdrop-blur-xl border-b border-white/5 shadow-[0_4px_30px_rgba(0,0,0,0.4)]'
+            : 'bg-transparent'
+        }`}
+      >
+        <div className='max-w-[1280px] mx-auto px-6 lg:px-8'>
+          <div className='flex items-center justify-between h-[68px]'>
+            {/* Logo — scrolls to top */}
             <button
-              onClick={handleRegisterClick}
-              className='mt-2 w-full rounded-md bg-blue-500 px-6 py-2 text-base font-semibold text-white shadow-md transition-all duration-200 hover:bg-blue-600 dark:bg-blue-600 dark:shadow-blue-900/30 dark:hover:bg-blue-700'
+              onClick={() => scrollTo('hero')}
+              className='flex-shrink-0 focus:outline-none'
+              aria-label='Go to top'
             >
-              Register
+              <div className='bg-white rounded-md px-3 py-1.5 flex items-center'>
+                <Image
+                  src='/logo.png'
+                  alt='Logo'
+                  width={60}
+                  height={24}
+                  className='h-5 w-auto'
+                />
+              </div>
+            </button>
+
+            {/* Desktop Nav Links */}
+            <div className='hidden lg:flex items-center gap-8'>
+              {navLinks.map((link) => (
+                <button
+                  key={link.label}
+                  onClick={() => handleNavClick(link.sectionId)}
+                  className='text-[15px] text-white/80 hover:text-white font-medium transition-colors duration-200 focus:outline-none'
+                >
+                  {link.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Desktop CTA */}
+            <div className='hidden lg:flex items-center gap-4'>
+              <Link
+                href='/signin'
+                className='text-[15px] text-white/80 hover:text-white font-medium transition-colors duration-200'
+              >
+                Sign In
+              </Link>
+              <button
+                onClick={() => handleNavClick('reserve-access')}
+                className='bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[15px] font-semibold px-5 py-2.5 rounded-full transition-all duration-200 hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] active:scale-95 focus:outline-none'
+              >
+                Secure Your Seat
+              </button>
+            </div>
+
+            {/* Mobile Hamburger */}
+            <button
+              onClick={() => setIsOpen(true)}
+              className='lg:hidden p-2 text-white transition-opacity hover:opacity-70 focus:outline-none'
+              aria-label='Open menu'
+            >
+              <Menu size={24} />
             </button>
           </div>
         </div>
-      )}
-    </nav>
+      </nav>
+
+      {/* Mobile Drawer Overlay */}
+      <div
+        onClick={() => setIsOpen(false)}
+        className={`fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+          isOpen
+            ? 'opacity-100 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        }`}
+      />
+
+      {/* Mobile Drawer */}
+      <div
+        className={`fixed top-0 left-0 bottom-0 z-[70] w-full max-w-[360px] bg-[#080d1a] border-r border-white/10 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Drawer Header */}
+        <div className='flex items-center justify-between px-5 h-[68px] border-b border-white/10'>
+          <button
+            onClick={() => handleNavClick('hero')}
+            className='focus:outline-none'
+          >
+            <div className='bg-white rounded-md px-3 py-1.5'>
+              <Image
+                src='/logo.png'
+                alt='Logo'
+                width={60}
+                height={24}
+                className='h-5 w-auto'
+              />
+            </div>
+          </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            className='p-2 text-white/70 hover:text-white transition-colors focus:outline-none'
+            aria-label='Close menu'
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        {/* Drawer Nav Links */}
+        <div className='flex flex-col px-5 pt-6 gap-1'>
+          {navLinks.map((link, i) => (
+            <button
+              key={link.label}
+              onClick={() => handleNavClick(link.sectionId)}
+              style={{ transitionDelay: isOpen ? `${i * 60}ms` : '0ms' }}
+              className={`text-[18px] font-semibold text-white py-3 border-b border-white/10 text-left transition-all duration-300 hover:text-[#2563eb] focus:outline-none ${
+                isOpen
+                  ? 'opacity-100 translate-x-0'
+                  : 'opacity-0 -translate-x-4'
+              }`}
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Drawer Bottom */}
+        <div className='mt-auto px-5 pb-8 flex flex-col gap-3'>
+          <div className='border-t border-white/10 pt-5 mb-1'>
+            <Link
+              href='/signin'
+              onClick={() => setIsOpen(false)}
+              className='text-[15px] text-white/70 hover:text-white font-medium transition-colors'
+            >
+              Sign In
+            </Link>
+          </div>
+          <button
+            onClick={() => handleNavClick('reserve-access')}
+            className='flex items-center justify-center gap-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[15px] font-bold px-5 py-3.5 rounded-full transition-all duration-200 hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] focus:outline-none'
+          >
+            Secure Your Seat
+          </button>
+          <button
+            onClick={() => handleNavClick('reserve-access')}
+            className='flex items-center justify-center gap-2.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-[15px] font-semibold px-5 py-3.5 rounded-full transition-all duration-200 focus:outline-none'
+          >
+            <Play size={13} className='fill-[#f59e0b] text-[#f59e0b]' />
+            Book Private Consulting Call
+          </button>
+        </div>
+      </div>
+    </>
   )
 }
-
-export default Navbar
