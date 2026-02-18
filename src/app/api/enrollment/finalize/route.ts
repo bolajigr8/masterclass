@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     // Validate required fields
     if (
       !enrollmentReference ||
+      !selectedSession?.sessionId ||
       !selectedSession?.date ||
       !selectedSession?.time ||
       !amountPaid ||
@@ -61,7 +62,9 @@ export async function POST(request: Request) {
 
     // Update the enrollment with session and payment details
     enrollment.selectedSession = {
+      sessionId: selectedSession.sessionId,
       date: selectedSession.date,
+
       time: selectedSession.time,
     }
     enrollment.amountPaid = amountPaid
