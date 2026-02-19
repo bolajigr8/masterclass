@@ -1,302 +1,213 @@
 'use client'
 
-import { useState, useMemo } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
-  Search,
   CheckCircle2,
   XCircle,
-  Download,
-  Copy,
-  Check,
+  Clock,
 } from 'lucide-react'
-import { AttendeeRecord, PaginatedResponse } from '@/lib/admin/auth'
+import type { AttendeeRecord, PaginatedResponse } from '@/lib/admin/auth'
 
 interface AttendanceTableProps {
   data: PaginatedResponse<AttendeeRecord>
-  onPageChange: (page: number) => void
+  selectedDay: 1 | 2
+  isTwoDay: boolean
   title: string
-  emptyMessage?: string
-  isLoading?: boolean
+  emptyMessage: string
+  isLoading: boolean
+  onPageChange: (page: number) => void
 }
 
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleDateString('en-NG', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return dateStr
-  }
+function formatDateTime(iso?: string): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('en-NG', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
+
+function CheckInBadge({
+  checked,
+  at,
+  label,
+}: {
+  checked: boolean
+  at?: string
+  label: string
+}) {
+  return (
+    <div className='flex flex-col gap-0.5'>
+      <div
+        className={`inline-flex items-center gap-1.5 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide ${
+          checked ? 'bg-green-100 text-green-800' : 'bg-red-50 text-red-600'
+        }`}
+      >
+        {checked ? (
+          <CheckCircle2 className='h-3 w-3' />
+        ) : (
+          <XCircle className='h-3 w-3' />
+        )}
+        {label}: {checked ? 'Yes' : 'No'}
+      </div>
+      {checked && at && (
+        <div className='flex items-center gap-1 font-mono text-[10px] text-neutral-500'>
+          <Clock className='h-2.5 w-2.5' />
+          {formatDateTime(at)}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function AttendanceTable({
   data,
-  onPageChange,
+  selectedDay,
+  isTwoDay,
   title,
-  emptyMessage = 'No attendees found',
+  emptyMessage,
   isLoading,
+  onPageChange,
 }: AttendanceTableProps) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [copiedRef, setCopiedRef] = useState<string | null>(null)
-
-  // Client-side filtering
-  const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return data.data
-
-    const query = searchQuery.toLowerCase()
-    return data.data.filter(
-      (attendee) =>
-        attendee.name.toLowerCase().includes(query) ||
-        attendee.email.toLowerCase().includes(query) ||
-        attendee.enrollmentReference.toLowerCase().includes(query) ||
-        attendee.phone.includes(query),
-    )
-  }, [data.data, searchQuery])
-
-  const copyToClipboard = async (text: string, id: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopiedRef(id)
-      setTimeout(() => setCopiedRef(null), 2000)
-    } catch (err) {
-      console.error('Copy failed:', err)
-    }
-  }
-
-  const exportToCSV = () => {
-    const headers = [
-      'Name',
-      'Email',
-      'Phone',
-      'Enrollment Ref',
-      'Product',
-      'Access Tier',
-      'Checked In',
-      'Checked In At',
-      'Registered At',
-    ]
-
-    const rows = filteredData.map((a) => [
-      a.name,
-      a.email,
-      a.phone,
-      a.enrollmentReference,
-      a.productType,
-      a.accessTier,
-      a.checkedIn ? 'Yes' : 'No',
-      a.checkedInAt ? formatDate(a.checkedInAt) : '',
-      formatDate(a.createdAt),
-    ])
-
-    const csv = [
-      headers.join(','),
-      ...rows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','),
-      ),
-    ].join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${title.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  const { meta } = data
 
   return (
-    <div className='border-4 border-neutral-900 bg-white'>
-      {/* Header */}
+    <div
+      className={`border-4 border-neutral-900 bg-white transition-opacity ${isLoading ? 'opacity-50' : 'opacity-100'}`}
+    >
+      {/* Table header */}
       <div className='border-b-4 border-neutral-900 bg-neutral-950 px-6 py-4'>
-        <div className='flex flex-wrap items-center justify-between gap-4'>
-          <div>
-            <h3 className='font-mono text-sm font-bold uppercase tracking-wider text-white'>
-              {title}
-            </h3>
-            <p className='mt-1 font-mono text-xs text-neutral-400'>
-              {data.meta.totalCount} total records
-            </p>
-          </div>
-
-          <div className='flex items-center gap-3'>
-            {/* Search */}
-            <div className='relative'>
-              <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500' />
-              <input
-                type='text'
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder='Search...'
-                className='w-64 border-2 border-neutral-700 bg-neutral-900 py-2 pl-10 pr-4 font-mono text-sm text-white placeholder:text-neutral-500 focus:border-white focus:outline-none'
-              />
-            </div>
-
-            {/* Export */}
-            <button
-              onClick={exportToCSV}
-              className='flex items-center gap-2 border-2 border-white bg-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-neutral-950 transition-colors hover:bg-neutral-950 hover:text-white'
-            >
-              <Download className='h-4 w-4' />
-              Export CSV
-            </button>
-          </div>
+        <div className='flex items-center justify-between gap-4'>
+          <h2 className='font-mono text-sm font-bold uppercase tracking-wider text-white'>
+            {title}
+          </h2>
+          <span className='font-mono text-xs text-neutral-400'>
+            {meta.totalCount} attendee{meta.totalCount !== 1 ? 's' : ''}
+            {meta.totalPages > 1 &&
+              ` · Page ${meta.page} of ${meta.totalPages}`}
+          </span>
         </div>
       </div>
 
-      {/* Table */}
-      <div className='overflow-x-auto'>
-        {isLoading ? (
-          <div className='flex h-64 items-center justify-center'>
-            <div className='h-8 w-8 animate-spin rounded-full border-4 border-neutral-900 border-t-transparent' />
-          </div>
-        ) : filteredData.length === 0 ? (
-          <div className='flex h-64 flex-col items-center justify-center gap-3'>
-            <XCircle className='h-12 w-12 text-neutral-400' strokeWidth={1.5} />
-            <p className='font-mono text-sm text-neutral-500'>{emptyMessage}</p>
-          </div>
-        ) : (
-          <table className='w-full'>
+      {data.data.length === 0 ? (
+        <div className='px-6 py-12 text-center'>
+          <p className='font-mono text-sm text-neutral-400'>{emptyMessage}</p>
+        </div>
+      ) : (
+        <div className='overflow-x-auto'>
+          <table className='w-full border-collapse'>
             <thead>
               <tr className='border-b-2 border-neutral-900 bg-neutral-100'>
-                <th className='px-6 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-neutral-900'>
-                  Name
-                </th>
-                <th className='px-6 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-neutral-900'>
-                  Email
-                </th>
-                <th className='px-6 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-neutral-900'>
-                  Phone
-                </th>
-                <th className='px-6 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-neutral-900'>
-                  Enrollment Ref
-                </th>
-                <th className='px-6 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-neutral-900'>
-                  Product
-                </th>
-                <th className='px-6 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-neutral-900'>
-                  Access
-                </th>
-                <th className='px-6 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-neutral-900'>
-                  Status
-                </th>
-                <th className='px-6 py-3 text-left font-mono text-xs font-bold uppercase tracking-wider text-neutral-900'>
-                  Checked In At
-                </th>
+                {[
+                  'Name',
+                  'Email',
+                  'Phone',
+                  'Reference',
+                  isTwoDay ? 'Day 1 Check-In' : 'Check-In',
+                  ...(isTwoDay ? ['Day 2 Check-In'] : []),
+                  'Registered',
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className='px-4 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-600'
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((attendee, idx) => (
+              {data.data.map((attendee, i) => (
                 <tr
                   key={attendee._id}
                   className={`border-b border-neutral-200 transition-colors hover:bg-neutral-50 ${
-                    idx % 2 === 0 ? 'bg-white' : 'bg-neutral-50/50'
+                    i % 2 === 0 ? '' : 'bg-neutral-50/50'
                   }`}
                 >
-                  <td className='px-6 py-4 font-mono text-sm font-medium text-neutral-900'>
-                    {attendee.name}
-                  </td>
-                  <td className='px-6 py-4 font-mono text-sm text-neutral-600'>
-                    {attendee.email}
-                  </td>
-                  <td className='px-6 py-4 font-mono text-sm text-neutral-600'>
-                    {attendee.phone}
-                  </td>
-                  <td className='px-6 py-4'>
-                    <button
-                      onClick={() =>
-                        copyToClipboard(
-                          attendee.enrollmentReference,
-                          attendee._id,
-                        )
-                      }
-                      className='group flex items-center gap-2 font-mono text-xs text-neutral-700 transition-colors hover:text-neutral-950'
-                    >
-                      <span>{attendee.enrollmentReference}</span>
-                      {copiedRef === attendee._id ? (
-                        <Check className='h-3 w-3 text-green-600' />
-                      ) : (
-                        <Copy className='h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100' />
-                      )}
-                    </button>
-                  </td>
-                  <td className='px-6 py-4 font-mono text-xs text-neutral-600'>
-                    {attendee.productType}
-                  </td>
-                  <td className='px-6 py-4'>
-                    <span
-                      className={`inline-flex items-center border px-2 py-1 font-mono text-xs font-bold uppercase tracking-wider ${
-                        attendee.accessTier === 'full'
-                          ? 'border-blue-600 bg-blue-50 text-blue-700'
-                          : 'border-cyan-600 bg-cyan-50 text-cyan-700'
-                      }`}
-                    >
-                      {attendee.accessTier}
-                    </span>
-                  </td>
-                  <td className='px-6 py-4'>
-                    {attendee.checkedIn ? (
-                      <div className='flex items-center gap-2 text-green-600'>
-                        <CheckCircle2 className='h-4 w-4' strokeWidth={2} />
-                        <span className='font-mono text-xs font-bold uppercase'>
-                          In
-                        </span>
-                      </div>
-                    ) : (
-                      <div className='flex items-center gap-2 text-neutral-400'>
-                        <XCircle className='h-4 w-4' strokeWidth={2} />
-                        <span className='font-mono text-xs font-bold uppercase'>
-                          Pending
-                        </span>
-                      </div>
+                  <td className='px-4 py-3'>
+                    <p className='font-mono text-sm font-semibold text-neutral-900'>
+                      {attendee.name}
+                    </p>
+                    {attendee.productType && (
+                      <p className='font-mono text-[10px] text-neutral-400'>
+                        {attendee.productType}
+                      </p>
                     )}
                   </td>
-                  <td className='px-6 py-4 font-mono text-xs text-neutral-500'>
-                    {attendee.checkedInAt
-                      ? formatDate(attendee.checkedInAt)
-                      : '—'}
+
+                  <td className='px-4 py-3 font-mono text-xs text-neutral-600'>
+                    {attendee.email}
+                  </td>
+
+                  <td className='px-4 py-3 font-mono text-xs text-neutral-600'>
+                    {attendee.phone}
+                  </td>
+
+                  <td className='px-4 py-3'>
+                    <code className='rounded bg-neutral-100 px-2 py-0.5 font-mono text-[11px] font-bold text-neutral-800'>
+                      {attendee.enrollmentReference}
+                    </code>
+                  </td>
+
+                  {/* Day 1 check-in */}
+                  <td className='px-4 py-3'>
+                    <CheckInBadge
+                      checked={attendee.checkedInDay1}
+                      at={attendee.checkedInDay1At}
+                      label='D1'
+                    />
+                  </td>
+
+                  {/* Day 2 check-in — only shown for 2-day sessions */}
+                  {isTwoDay && (
+                    <td className='px-4 py-3'>
+                      <CheckInBadge
+                        checked={attendee.checkedInDay2}
+                        at={attendee.checkedInDay2At}
+                        label='D2'
+                      />
+                    </td>
+                  )}
+
+                  <td className='px-4 py-3 font-mono text-[11px] text-neutral-400'>
+                    {formatDateTime(attendee.createdAt)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Pagination */}
-      {!isLoading && filteredData.length > 0 && (
-        <div className='border-t-2 border-neutral-900 bg-neutral-100 px-6 py-4'>
-          <div className='flex items-center justify-between'>
-            <p className='font-mono text-xs text-neutral-600'>
-              Page {data.meta.page} of {data.meta.totalPages} • Showing{' '}
-              {filteredData.length} of {data.meta.totalCount} records
-            </p>
+      {meta.totalPages > 1 && (
+        <div className='flex items-center justify-between border-t-2 border-neutral-200 px-6 py-4'>
+          <button
+            onClick={() => onPageChange(meta.page - 1)}
+            disabled={!meta.hasPrevPage || isLoading}
+            className='flex items-center gap-2 border-2 border-neutral-900 bg-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wide text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40'
+          >
+            <ChevronLeft className='h-4 w-4' />
+            Previous
+          </button>
 
-            <div className='flex items-center gap-2'>
-              <button
-                onClick={() => onPageChange(data.meta.page - 1)}
-                disabled={!data.meta.hasPrevPage}
-                className='flex items-center gap-1 border-2 border-neutral-900 bg-white px-3 py-2 font-mono text-xs font-bold uppercase text-neutral-900 transition-colors hover:bg-neutral-950 hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-neutral-900'
-              >
-                <ChevronLeft className='h-4 w-4' />
-                Prev
-              </button>
+          <span className='font-mono text-xs text-neutral-500'>
+            {(meta.page - 1) * meta.limit + 1}–
+            {Math.min(meta.page * meta.limit, meta.totalCount)} of{' '}
+            {meta.totalCount}
+          </span>
 
-              <button
-                onClick={() => onPageChange(data.meta.page + 1)}
-                disabled={!data.meta.hasNextPage}
-                className='flex items-center gap-1 border-2 border-neutral-900 bg-white px-3 py-2 font-mono text-xs font-bold uppercase text-neutral-900 transition-colors hover:bg-neutral-950 hover:text-white disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-neutral-900'
-              >
-                Next
-                <ChevronRight className='h-4 w-4' />
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={() => onPageChange(meta.page + 1)}
+            disabled={!meta.hasNextPage || isLoading}
+            className='flex items-center gap-2 border-2 border-neutral-900 bg-white px-4 py-2 font-mono text-xs font-bold uppercase tracking-wide text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40'
+          >
+            Next
+            <ChevronRight className='h-4 w-4' />
+          </button>
         </div>
       )}
     </div>

@@ -20,6 +20,8 @@ const featuredTestimonials = [
     quote:
       "Femi's approach to tokenized real estate opened my eyes to a completely new asset class. The network alone is worth 10x the investment.",
     name: 'Amara Nwosu',
+    badge: '1Investment Analyst, Dubai',
+
     title: 'Investment Analyst, Dubai',
     avatar: '/testimonial2.jpg',
     rating: 5,

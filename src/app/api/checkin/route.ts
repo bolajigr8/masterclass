@@ -2,66 +2,41 @@ import { NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/mongodb'
 import Enrollment from '@/models/Enrollment'
 
-// How many minutes before the event start check-in opens
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** How many minutes before the session start that check-in opens */
 const CHECKIN_OPEN_MINUTES_BEFORE = 30
 
-// How long (minutes) the event lasts — check-in closes when the event ends.
-// Set via env var; default 120 minutes (2 hours).
+/** How long the session lasts — check-in is accepted until the session ends.
+ *  Override via EVENT_DURATION_MINUTES env var. */
 const EVENT_DURATION_MINUTES = parseInt(
-  process.env.EVENT_DURATION_MINUTES ?? '120',
+  process.env.EVENT_DURATION_MINUTES ?? '480', // 8 hours to cover a full day
   10,
 )
 
+// ---------------------------------------------------------------------------
+// Timezone-aware date parsing
+// ---------------------------------------------------------------------------
+
 /**
- * Parses a session date string (YYYY-MM-DD) and time string (HH:MM or HH:MM AM/PM)
- * into a UTC Date object representing the event start time.
+ * Given an ISO date string (YYYY-MM-DD) and a 24-hour time string (HH:MM),
+ * returns a UTC Date object representing that moment in the given IANA timezone.
  *
- * We assume the session time is given in the timezone specified by
- * SESSION_TIMEZONE env var (default: 'Africa/Lagos').
+ * We use the Intl.DateTimeFormat trick to determine the UTC offset precisely.
  */
-function parseSessionStart(date: string, time: string): Date {
-  const tz = process.env.SESSION_TIMEZONE ?? 'Africa/Lagos'
+function parseSessionStart(dateStr: string, timeStr: string, tz: string): Date {
+  // Normalise time to HH:MM:SS
+  const parts = timeStr.split(':')
+  const hh = (parts[0] ?? '00').padStart(2, '0')
+  const mm = (parts[1] ?? '00').padStart(2, '0')
+  const normalized = `${dateStr}T${hh}:${mm}:00`
 
-  // Normalise the time string (handle both 24h and 12h formats)
-  const normalized = `${date}T${convertTo24h(time)}`
+  // First, treat it as UTC to get a Date we can feed into Intl
+  const assumedUtc = new Date(normalized + 'Z')
 
-  // Build a Date in the target timezone using the Intl API trick:
-  // We format a known UTC moment back in the target timezone and compare
-  // offsets. A simpler approach works for server-side: combine date + time
-  // into an ISO-like string and account for tz offset.
-  //
-  // For production precision we recommend using the `date-fns-tz` or `luxon`
-  // library. Here we do a straightforward approach that works for WAT (UTC+1).
-  const tzOffsetMs = getTimezoneOffsetMs(tz, normalized)
-  const utcMs = new Date(normalized).getTime() - tzOffsetMs
-  return new Date(utcMs)
-}
-
-/** Convert "2:00 PM" or "14:00" → "14:00:00" */
-function convertTo24h(time: string): string {
-  const upper = time.trim().toUpperCase()
-  const amPmMatch = upper.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/)
-
-  if (amPmMatch) {
-    let hours = parseInt(amPmMatch[1], 10)
-    const minutes = amPmMatch[2]
-    const meridiem = amPmMatch[3]
-
-    if (meridiem === 'PM' && hours !== 12) hours += 12
-    if (meridiem === 'AM' && hours === 12) hours = 0
-
-    return `${String(hours).padStart(2, '0')}:${minutes}:00`
-  }
-
-  // Assume already in HH:MM or HH:MM:SS
-  const parts = upper.split(':')
-  return `${parts[0].padStart(2, '0')}:${parts[1] ?? '00'}:${parts[2] ?? '00'}`
-}
-
-/** Approximates the UTC offset in ms for a given IANA timezone name. */
-function getTimezoneOffsetMs(tz: string, isoLocalString: string): number {
   try {
-    // Create a formatter that outputs UTC time for a given TZ
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: tz,
       year: 'numeric',
@@ -73,30 +48,50 @@ function getTimezoneOffsetMs(tz: string, isoLocalString: string): number {
       hour12: false,
     })
 
-    // Parse our local ISO string as if it were UTC first
-    const assumedUtc = new Date(isoLocalString + 'Z')
+    // What does the target TZ say this UTC moment is?
+    const p = Object.fromEntries(
+      formatter.formatToParts(assumedUtc).map((x) => [x.type, x.value]),
+    )
 
-    // Format that UTC moment in the target timezone
-    const parts = formatter.formatToParts(assumedUtc)
-    const p = Object.fromEntries(parts.map((x) => [x.type, x.value]))
+    // Reconstruct as a "local" Date and compute offset
     const tzLocal = new Date(
       `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`,
     )
+    const offsetMs = tzLocal.getTime() - assumedUtc.getTime()
 
-    // Offset = (what the TZ says) - (what we assumed was UTC)
-    return tzLocal.getTime() - assumedUtc.getTime()
+    // Subtract offset to get the true UTC time for this local moment
+    return new Date(assumedUtc.getTime() - offsetMs)
   } catch {
-    // Fallback to WAT = UTC+1
-    return -60 * 60 * 1000
+    // Fallback: WAT = UTC+1
+    return new Date(assumedUtc.getTime() - 60 * 60 * 1000)
   }
 }
 
+/**
+ * Derive the IANA timezone from the session city.
+ * Extend this map as new cities are added to session-config.
+ */
+function timezoneForCity(city?: string): string {
+  if (!city) return 'Africa/Lagos'
+  const lower = city.toLowerCase()
+  if (lower.includes('dubai')) return 'Asia/Dubai'
+  if (lower.includes('london')) return 'Europe/London'
+  if (lower.includes('singapore')) return 'Asia/Singapore'
+  return 'Africa/Lagos' // WAT default
+}
+
+// ---------------------------------------------------------------------------
+// Route handler
 // ---------------------------------------------------------------------------
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { email, enrollmentReference, sessionId } = body
+
+    // `day` must be 1 or 2. Defaults to 1 for single-day sessions.
+    const { email, enrollmentReference, sessionId, day: rawDay } = body
+
+    const day: 1 | 2 = rawDay === 2 ? 2 : 1
 
     // ── Field validation ────────────────────────────────────────────────────
     if (!email || !enrollmentReference || !sessionId) {
@@ -112,10 +107,10 @@ export async function POST(request: Request) {
 
     await connectToDatabase()
 
-    // ── VALIDATION 1: Enrollment must exist with matching email + reference ──
+    // ── Validation 1: Enrollment must exist with matching email + reference ──
     const enrollment = await Enrollment.findOne({
       email: String(email).toLowerCase().trim(),
-      enrollmentReference: String(enrollmentReference).trim(),
+      enrollmentReference: String(enrollmentReference).trim().toUpperCase(),
     })
 
     if (!enrollment) {
@@ -123,14 +118,48 @@ export async function POST(request: Request) {
         {
           error: 'Check-in failed.',
           details:
-            'No enrollment found matching the provided email and enrollment reference.',
+            'No enrollment found matching that email and reference. Please check both and try again.',
         },
         { status: 404 },
       )
     }
 
-    // ── VALIDATION 2: Session ID must match the enrolled session ─────────────
-    // This prevents a user from checking in to a session they didn't register for.
+    // ── Validation 2: Payment must be confirmed ─────────────────────────────
+    if (enrollment.paymentStatus !== 'success') {
+      return NextResponse.json(
+        {
+          error: 'Payment not confirmed.',
+          details:
+            'Your payment has not been confirmed. Please contact event staff.',
+        },
+        { status: 403 },
+      )
+    }
+
+    // ── Validation 3: Booking must be confirmed ─────────────────────────────
+    if (enrollment.bookingStatus !== 'confirmed') {
+      return NextResponse.json(
+        {
+          error: 'Booking not confirmed.',
+          details: 'Your booking is not confirmed. Please contact event staff.',
+        },
+        { status: 403 },
+      )
+    }
+
+    // ── Validation 4: Access tier must be "full" ────────────────────────────
+    if (enrollment.accessTier !== 'full') {
+      return NextResponse.json(
+        {
+          error: 'Live check-in not available.',
+          details:
+            'Your enrollment is for virtual or consulting access. Live check-in is only for Signature Live Masterclass attendees.',
+        },
+        { status: 403 },
+      )
+    }
+
+    // ── Validation 5: Session ID must match ─────────────────────────────────
     if (
       !enrollment.selectedSession ||
       enrollment.selectedSession.sessionId !== String(sessionId).trim()
@@ -139,70 +168,69 @@ export async function POST(request: Request) {
         {
           error: 'Session mismatch.',
           details:
-            'This QR code is for a different session than the one you registered for.',
+            'This check-in QR code is for a different session than the one on your enrollment. Please find the correct QR code for your event.',
         },
         { status: 403 },
       )
     }
 
-    // ── VALIDATION 3: Access tier must be "full" ─────────────────────────────
-    if (enrollment.accessTier !== 'full') {
+    const session = enrollment.selectedSession
+
+    // ── Validation 6: Day 2 only allowed for 2-day sessions ─────────────────
+    if (day === 2 && !session.isTwoDay) {
       return NextResponse.json(
         {
-          error: 'Live check-in not available.',
+          error: 'Invalid day.',
           details:
-            'Your access tier is set to "virtual". Live check-in is only available for full-access attendees.',
+            'This session is a single-day event. Day 2 check-in is not applicable.',
         },
-        { status: 403 },
+        { status: 400 },
       )
     }
 
-    // ── VALIDATION 4: Payment must be successful ─────────────────────────────
-    if (enrollment.paymentStatus !== 'success') {
+    // ── Validation 7: Date array must have an entry for the requested day ────
+    const dateIndex = day - 1
+    const sessionDateStr = session.dates[dateIndex]
+    if (!sessionDateStr) {
       return NextResponse.json(
         {
-          error: 'Payment not confirmed.',
-          details:
-            'Your payment has not been confirmed. Please contact support.',
+          error: 'Session date not found.',
+          details: `No date configured for Day ${day} of this session.`,
         },
-        { status: 403 },
+        { status: 400 },
       )
     }
 
-    // ── VALIDATION 5: Booking must be confirmed ──────────────────────────────
-    if (enrollment.bookingStatus !== 'confirmed') {
-      return NextResponse.json(
-        {
-          error: 'Booking not confirmed.',
-          details:
-            'Your booking has not been confirmed. Please contact support.',
-        },
-        { status: 403 },
-      )
-    }
-
-    // ── VALIDATION 6: Not already checked in ────────────────────────────────
-    if (enrollment.checkedIn) {
+    // ── Validation 8: Already checked in for this day ───────────────────────
+    if (day === 1 && enrollment.checkedInDay1) {
       return NextResponse.json(
         {
           error: 'Already checked in.',
-          details: `You were already checked in at ${enrollment.checkedInAt?.toISOString()}.`,
+          details: `You already checked in for Day 1 at ${enrollment.checkedInDay1At?.toLocaleString('en-NG', { timeZone: timezoneForCity(session.city) })}.`,
         },
         { status: 409 },
       )
     }
 
-    // ── VALIDATION 7: Time window ────────────────────────────────────────────
+    if (day === 2 && enrollment.checkedInDay2) {
+      return NextResponse.json(
+        {
+          error: 'Already checked in.',
+          details: `You already checked in for Day 2 at ${enrollment.checkedInDay2At?.toLocaleString('en-NG', { timeZone: timezoneForCity(session.city) })}.`,
+        },
+        { status: 409 },
+      )
+    }
+
+    // ── Validation 9: Time window ────────────────────────────────────────────
+    const tz = timezoneForCity(session.city)
     const now = new Date()
-    const sessionStart = parseSessionStart(
-      enrollment.selectedSession.date,
-      enrollment.selectedSession.time,
-    )
+    const sessionStart = parseSessionStart(sessionDateStr, session.time, tz)
     const sessionEnd = new Date(
-      sessionStart.getTime() + EVENT_DURATION_MINUTES * 60 * 1000,
+      sessionStart.getTime() + EVENT_DURATION_MINUTES * 60_000,
     )
     const checkinOpensAt = new Date(
-      sessionStart.getTime() - CHECKIN_OPEN_MINUTES_BEFORE * 60 * 1000,
+      sessionStart.getTime() - CHECKIN_OPEN_MINUTES_BEFORE * 60_000,
     )
 
     if (now < checkinOpensAt) {
@@ -212,7 +240,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: 'Check-in not open yet.',
-          details: `Check-in opens ${CHECKIN_OPEN_MINUTES_BEFORE} minutes before the session starts. Please come back in approximately ${minutesUntilOpen} minute(s).`,
+          details: `Check-in for Day ${day} opens ${CHECKIN_OPEN_MINUTES_BEFORE} minutes before the session. Please return in approximately ${minutesUntilOpen} minute(s).`,
         },
         { status: 403 },
       )
@@ -222,28 +250,46 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: 'Check-in closed.',
-          details: 'The session has ended. Check-in is no longer available.',
+          details: `Day ${day} has ended. Check-in is no longer available.`,
         },
         { status: 403 },
       )
     }
 
-    // ── All validations passed — mark as checked in ──────────────────────────
-    enrollment.checkedIn = true
-    enrollment.checkedInAt = now
+    // ── All validations passed — mark the appropriate day as checked in ──────
+    const now2 = new Date()
+
+    if (day === 1) {
+      enrollment.checkedInDay1 = true
+      enrollment.checkedInDay1At = now2
+    } else {
+      enrollment.checkedInDay2 = true
+      enrollment.checkedInDay2At = now2
+    }
+
     await enrollment.save()
 
     return NextResponse.json(
       {
         success: true,
         message: 'Access Granted.',
+        day,
+        checkedInAt: now2.toISOString(),
         attendee: {
           name: enrollment.name,
           email: enrollment.email,
+          enrollmentReference: enrollment.enrollmentReference,
           productType: enrollment.productType,
-          sessionDate: enrollment.selectedSession.date,
-          sessionTime: enrollment.selectedSession.time,
-          checkedInAt: enrollment.checkedInAt,
+          sessionDate: sessionDateStr,
+          sessionTime: session.time,
+          venue: session.venue,
+          city: session.city,
+          isTwoDay: session.isTwoDay ?? false,
+          // Reflect current state of both days
+          checkedInDay1: enrollment.checkedInDay1,
+          checkedInDay1At: enrollment.checkedInDay1At?.toISOString(),
+          checkedInDay2: enrollment.checkedInDay2,
+          checkedInDay2At: enrollment.checkedInDay2At?.toISOString(),
         },
       },
       { status: 200 },

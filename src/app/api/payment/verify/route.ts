@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/mongodb'
 import Enrollment from '@/models/Enrollment'
-import { getPrice, isValidProductType } from '@/lib/pricing'
+import { getPrice, getAccessTier, isValidProductType } from '@/lib/pricing'
 import {
   sendVirtualAccessConfirmation,
   sendFullAccessConfirmation,
+  sendConsultingConfirmation,
 } from '@/lib/email'
 
 type PaystackVerifyResponse = {
@@ -13,15 +14,10 @@ type PaystackVerifyResponse = {
   data?: {
     status: string
     reference: string
-    amount: number // kobo
+    amount: number
     currency: string
-    customer: {
-      email: string
-      first_name?: string
-      last_name?: string
-    }
+    customer: { email: string }
     paid_at?: string
-    channel?: string
   }
 }
 
@@ -31,16 +27,18 @@ export async function POST(request: Request) {
 
     const {
       reference,
-      // Enrollment context — sent by frontend after popup callback
       enrollmentReference,
       productType,
+      // Session data from session-config (resolved on frontend from sessionId)
       sessionId,
-      sessionDate,
+      sessionDates, // string[] — ['2026-03-14'] or ['2026-03-14', '2026-03-15']
       sessionTime,
-      accessTier,
+      sessionVenue,
+      sessionCity,
+      isTwoDay,
     } = body
 
-    // ── Field validation ──────────────────────────────────────────────────
+    // ── Field validation ─────────────────────────────────────────────────────
     if (!reference || typeof reference !== 'string') {
       return NextResponse.json(
         { error: 'Missing or invalid payment reference.' },
@@ -52,16 +50,21 @@ export async function POST(request: Request) {
       !enrollmentReference ||
       !productType ||
       !sessionId ||
-      !sessionDate ||
-      !sessionTime ||
-      !accessTier
+      !sessionDates ||
+      !sessionTime
     ) {
       return NextResponse.json(
         {
           error: 'Missing enrollment context.',
-          details:
-            'enrollmentReference, productType, sessionId, sessionDate, sessionTime, and accessTier are all required.',
+          details: 'All session and enrollment fields are required.',
         },
+        { status: 400 },
+      )
+    }
+
+    if (!Array.isArray(sessionDates) || sessionDates.length === 0) {
+      return NextResponse.json(
+        { error: 'sessionDates must be a non-empty array.' },
         { status: 400 },
       )
     }
@@ -69,13 +72,6 @@ export async function POST(request: Request) {
     if (!isValidProductType(productType)) {
       return NextResponse.json(
         { error: 'Invalid product type.' },
-        { status: 400 },
-      )
-    }
-
-    if (!['virtual', 'full'].includes(accessTier)) {
-      return NextResponse.json(
-        { error: 'Invalid access tier.' },
         { status: 400 },
       )
     }
@@ -88,7 +84,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Verify with Paystack ──────────────────────────────────────────────
+    // ── Verify with Paystack ─────────────────────────────────────────────────
     const paystackResponse = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
       {
@@ -108,28 +104,24 @@ export async function POST(request: Request) {
           error: 'Payment verification failed.',
           details: paystackData.message,
         },
-        {
-          status: paystackResponse.status === 404 ? 404 : 502,
-        },
+        { status: paystackResponse.status === 404 ? 404 : 502 },
       )
     }
 
     const tx = paystackData.data
 
-    // ── VALIDATION 1: Transaction must be successful ──────────────────────
+    // ── Validation 1: Transaction must be successful ─────────────────────────
     if (tx.status !== 'success') {
       return NextResponse.json(
         {
           error: 'Payment not successful.',
-          details: `Transaction status is "${tx.status}".`,
+          details: `Status is "${tx.status}".`,
         },
         { status: 402 },
       )
     }
 
-    // ── VALIDATION 2: Amount must match backend-expected price ────────────
-    // Backend determines the price from productType — frontend display amount
-    // is never trusted for the actual charge validation.
+    // ── Validation 2: Amount must match backend price ────────────────────────
     const expectedNaira = getPrice(productType)!
     const expectedKobo = expectedNaira * 100
 
@@ -139,56 +131,35 @@ export async function POST(request: Request) {
           `expected ${expectedKobo} kobo, got ${tx.amount} kobo`,
       )
       return NextResponse.json(
-        {
-          error: 'Payment amount mismatch.',
-          details:
-            'The amount paid does not match the expected price. Contact support.',
-        },
+        { error: 'Payment amount mismatch. Contact support.' },
         { status: 422 },
       )
     }
 
     await connectToDatabase()
 
-    // ── VALIDATION 3: Enrollment must exist ───────────────────────────────
+    // ── Validation 3: Enrollment must exist ──────────────────────────────────
     const enrollment = await Enrollment.findOne({ enrollmentReference })
-
     if (!enrollment) {
       return NextResponse.json(
-        {
-          error: 'Enrollment not found.',
-          details: 'No enrollment matched the provided reference.',
-        },
+        { error: 'Enrollment not found.' },
         { status: 404 },
       )
     }
 
-    // ── VALIDATION 4: Not already paid (idempotency guard) ─────────────────
+    // ── Validation 4: Idempotency guard ─────────────────────────────────────
     if (enrollment.paymentStatus === 'success') {
-      // Already processed — idempotent success response
       return NextResponse.json(
         {
           success: true,
-          message: 'This enrollment has already been confirmed.',
           alreadyProcessed: true,
-          enrollment: {
-            enrollmentReference: enrollment.enrollmentReference,
-            name: enrollment.name,
-            email: enrollment.email,
-            productType: enrollment.productType,
-            selectedSession: enrollment.selectedSession,
-            accessTier: enrollment.accessTier,
-            bookingStatus: enrollment.bookingStatus,
-            amountPaid: enrollment.amountPaid,
-          },
+          enrollment: buildEnrollmentResponse(enrollment),
         },
         { status: 200 },
       )
     }
 
-    // ── VALIDATION 5: Payment reference not used on another enrollment ─────
-    // Sparse unique index handles DB-level enforcement, but check early for
-    // a clean error message.
+    // ── Validation 5: Payment reference not used on another enrollment ───────
     const existingWithRef = await Enrollment.findOne({
       paymentReference: reference,
       enrollmentReference: { $ne: enrollmentReference },
@@ -196,51 +167,57 @@ export async function POST(request: Request) {
 
     if (existingWithRef) {
       return NextResponse.json(
-        {
-          error: 'Payment reference already used.',
-          details:
-            'This payment reference has already been applied to a different enrollment.',
-        },
+        { error: 'Payment reference already used on a different enrollment.' },
         { status: 409 },
       )
     }
 
-    // ── All validations passed — update the enrollment ────────────────────
+    // ── Derive access tier from product ──────────────────────────────────────
+    const accessTier = getAccessTier(productType)!
+
+    // ── Update the enrollment ─────────────────────────────────────────────────
     enrollment.paymentStatus = 'success'
     enrollment.bookingStatus = 'confirmed'
     enrollment.paymentReference = reference
     enrollment.productType = productType
     enrollment.expectedAmount = expectedNaira
     enrollment.amountPaid = expectedNaira
+    enrollment.accessTier = accessTier
     enrollment.selectedSession = {
       sessionId,
-      date: sessionDate,
+      dates: sessionDates,
       time: sessionTime,
+      venue: sessionVenue ?? undefined,
+      city: sessionCity ?? undefined,
+      isTwoDay: Boolean(isTwoDay),
     }
-    enrollment.accessTier = accessTier
 
     await enrollment.save()
 
-    // ── Dispatch confirmation email ───────────────────────────────────────
+    // ── Dispatch confirmation email ───────────────────────────────────────────
     const emailParams = {
       name: enrollment.name,
       email: enrollment.email,
       enrollmentReference: enrollment.enrollmentReference,
       productType,
-      sessionDate,
+      sessionDates,
       sessionTime,
+      sessionVenue,
+      sessionCity,
+      isTwoDay: Boolean(isTwoDay),
     }
 
     if (accessTier === 'virtual') {
       sendVirtualAccessConfirmation(emailParams).catch((err) =>
-        console.error('[payment/verify] Failed to send virtual email:', err),
+        console.error('[payment/verify] Virtual email error:', err),
       )
-    } else {
+    } else if (accessTier === 'full') {
       sendFullAccessConfirmation(emailParams).catch((err) =>
-        console.error(
-          '[payment/verify] Failed to send full-access email:',
-          err,
-        ),
+        console.error('[payment/verify] Full-access email error:', err),
+      )
+    } else if (accessTier === 'consulting') {
+      sendConsultingConfirmation(emailParams).catch((err) =>
+        console.error('[payment/verify] Consulting email error:', err),
       )
     }
 
@@ -248,29 +225,16 @@ export async function POST(request: Request) {
       {
         success: true,
         message: 'Payment verified and enrollment confirmed.',
-        enrollment: {
-          enrollmentReference: enrollment.enrollmentReference,
-          name: enrollment.name,
-          email: enrollment.email,
-          productType: enrollment.productType,
-          selectedSession: enrollment.selectedSession,
-          accessTier: enrollment.accessTier,
-          bookingStatus: enrollment.bookingStatus,
-          amountPaid: enrollment.amountPaid,
-        },
+        enrollment: buildEnrollmentResponse(enrollment),
       },
       { status: 200 },
     )
   } catch (error: any) {
     console.error('[payment/verify] Error:', error)
 
-    // MongoDB duplicate key on paymentReference
     if (error.code === 11000 && error.keyPattern?.paymentReference) {
       return NextResponse.json(
-        {
-          error: 'Payment reference already used.',
-          details: 'This payment has already been applied to an enrollment.',
-        },
+        { error: 'Payment reference already used.' },
         { status: 409 },
       )
     }
@@ -283,5 +247,18 @@ export async function POST(request: Request) {
       },
       { status: 500 },
     )
+  }
+}
+
+function buildEnrollmentResponse(enrollment: any) {
+  return {
+    enrollmentReference: enrollment.enrollmentReference,
+    name: enrollment.name,
+    email: enrollment.email,
+    productType: enrollment.productType,
+    selectedSession: enrollment.selectedSession,
+    accessTier: enrollment.accessTier,
+    bookingStatus: enrollment.bookingStatus,
+    amountPaid: enrollment.amountPaid,
   }
 }

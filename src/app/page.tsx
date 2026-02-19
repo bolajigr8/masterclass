@@ -5,9 +5,9 @@ import Footer from '@/components/footer'
 import HeroStats from '@/components/Hero-stats'
 import WhatYouWillMaster from '@/components/what-master'
 import MeetTheInstructor from '@/components/meet-instructor'
-import Pricing from '@/components/pricing'
+import Pricing from '@/components/Booking-New/pricing'
 import Testimonials from '@/components/testimonials'
-import ReserveAccess from '@/components/Reserve-access'
+import ReserveAccess from '@/components/Booking-New/Reserve-access'
 
 export default function Home() {
   return (

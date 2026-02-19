@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/mongodb'
 import Enrollment from '@/models/Enrollment'
-import { verifyAdminAuth, parsePagination } from '@/lib/adminAuth'
+import { verifyAdminAuth, parsePagination, parseDay } from '@/lib/adminAuth'
 
 /**
- * GET /api/admin/attendees?sessionId=SESSION_ID&page=1&limit=20
+ * GET /api/admin/attendees?sessionId=SESSION_ID&day=1&page=1&limit=20
  *
- * Returns all live-registered (full-access, payment confirmed) attendees
- * for the given session, paginated.
+ * Returns all live-access (full, payment confirmed) attendees for a session.
+ * The `day` param (1|2) determines which check-in fields are highlighted
+ * in the response — both checkedInDay1 and checkedInDay2 are always returned
+ * so the frontend can show full status.
  *
- * Requires:  Authorization: Bearer <ADMIN_PASSWORD>
+ * Requires: Authorization: Bearer <ADMIN_PASSWORD>
  */
 export async function GET(request: NextRequest) {
-  // ── Auth ──────────────────────────────────────────────────────────────────
   const authError = verifyAdminAuth(request)
   if (authError) return authError
 
@@ -41,7 +42,8 @@ export async function GET(request: NextRequest) {
     const [attendees, totalCount] = await Promise.all([
       Enrollment.find(filter)
         .select(
-          'name email phone enrollmentReference productType selectedSession accessTier checkedIn checkedInAt createdAt',
+          'name email phone enrollmentReference productType selectedSession accessTier ' +
+            'checkedInDay1 checkedInDay1At checkedInDay2 checkedInDay2At createdAt',
         )
         .sort({ createdAt: -1 })
         .skip(skip)

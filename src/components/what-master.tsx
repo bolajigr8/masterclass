@@ -96,9 +96,9 @@ export default function WhatYouWillMaster() {
       className='relative bg-[#050b18] w-full py-20 lg:py-28 px-5 overflow-hidden'
     >
       {/* Subtle background glow */}
-      <div className='absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#2563eb]/5 rounded-full blur-[120px] pointer-events-none' />
+      <div className='absolute top-0 left-1/2 -translate-x-1/2 w-150 h-75 bg-[#2563eb]/5 rounded-full blur-[120px] pointer-events-none' />
 
-      <div className='max-w-[1200px] mx-auto'>
+      <div className='max-w-300 mx-auto'>
         {/* Header */}
         <div
           className={`text-center mb-14 transition-all duration-700 ${
@@ -114,7 +114,7 @@ export default function WhatYouWillMaster() {
           >
             What You&apos;ll Master
           </h2>
-          <p className='mt-4 text-[15px] sm:text-[16px] text-white/50 max-w-[560px] mx-auto leading-relaxed'>
+          <p className='mt-4 text-[15px] sm:text-[16px] text-white/50 max-w-140 mx-auto leading-relaxed'>
             A comprehensive curriculum designed for ambitious entrepreneurs
             ready to dominate the $300 trillion real estate asset class.
           </p>
@@ -136,7 +136,7 @@ export default function WhatYouWillMaster() {
               >
                 {/* Icon */}
                 <div
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${mod.iconBg} transition-transform duration-300 group-hover:scale-110`}
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${mod.iconBg} transition-transform duration-300 group-hover:scale-110`}
                 >
                   <Icon size={20} className={mod.iconColor} />
                 </div>
@@ -159,7 +159,7 @@ export default function WhatYouWillMaster() {
                 </p>
 
                 {/* Hover bottom border glow */}
-                <div className='absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[#2563eb]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500' />
+                <div className='absolute bottom-0 left-4 right-4 h-px bg-linear-to-r from-transparent via-[#2563eb]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500' />
               </div>
             )
           })}

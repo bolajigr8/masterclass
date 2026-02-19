@@ -64,63 +64,63 @@ export const FAQ: React.FC = () => {
     <AnimatedSection>
       <section className='bg-white px-6 py-16 dark:bg-gray-950 sm:px-12 sm:py-20 md:px-16 md:py-24 lg:px-24 lg:py-32 xl:px-32'>
         <div className='mx-auto max-w-4xl'>
-        {/* Section Header */}
-        <div className='mb-12 text-center'>
-          <h2 className='mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl md:text-5xl'>
-            Frequently Asked Questions
-          </h2>
-          <p className='text-base leading-relaxed text-gray-600 dark:text-gray-300 sm:text-lg'>
-            Everything you need to know about the masterclass and enrollment
-            process.
-          </p>
-        </div>
+          {/* Section Header */}
+          <div className='mb-12 text-center'>
+            <h2 className='mb-4 text-3xl font-bold text-gray-900 dark:text-white sm:text-4xl md:text-5xl'>
+              Frequently Asked Questions
+            </h2>
+            <p className='text-base leading-relaxed text-gray-600 dark:text-gray-300 sm:text-lg'>
+              Everything you need to know about the masterclass and enrollment
+              process.
+            </p>
+          </div>
 
-        {/* FAQ Accordion */}
-        <div className='mb-12 space-y-4'>
-          {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className='overflow-hidden rounded-lg border border-gray-200 bg-gray-50 transition-all hover:-translate-y-[2px] hover:shadow-sm dark:border-gray-800 dark:bg-gray-900'
-            >
-              {/* Question Button */}
-              <button
-                onClick={() => toggleFAQ(index)}
-                className='flex w-full items-center justify-between gap-4 p-6 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'
+          {/* FAQ Accordion */}
+          <div className='mb-12 space-y-4'>
+            {faqs.map((faq, index) => (
+              <div
+                key={index}
+                className='overflow-hidden rounded-lg border border-gray-200 bg-gray-50 transition-all hover:-translate-y-0.5 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900'
               >
-                <span className='text-base font-semibold text-gray-900 dark:text-white sm:text-lg'>
-                  {faq.question}
-                </span>
-                <ChevronDown
-                  className={`h-5 w-5 shrink-0 text-gray-600 transition-transform dark:text-gray-400 ${
-                    openIndex === index ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+                {/* Question Button */}
+                <button
+                  onClick={() => toggleFAQ(index)}
+                  className='flex w-full items-center justify-between gap-4 p-6 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-800'
+                >
+                  <span className='text-base font-semibold text-gray-900 dark:text-white sm:text-lg'>
+                    {faq.question}
+                  </span>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 text-gray-600 transition-transform dark:text-gray-400 ${
+                      openIndex === index ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
 
-              {/* Answer */}
-              {openIndex === index && (
-                <div className='border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-950'>
-                  <p className='text-sm leading-relaxed text-gray-600 dark:text-gray-300 sm:text-base'>
-                    {faq.answer}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                {/* Answer */}
+                {openIndex === index && (
+                  <div className='border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-950'>
+                    <p className='text-sm leading-relaxed text-gray-600 dark:text-gray-300 sm:text-base'>
+                      {faq.answer}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
-        {/* Contact Support CTA */}
-        <div className='text-center'>
-          <p className='mb-4 text-base text-gray-600 dark:text-gray-300'>
-            Still have questions?
-          </p>
-          <Link
-            href='/contact'
-            className='inline-block rounded-md border-2 border-gray-300 bg-transparent px-6 py-3 text-base font-semibold text-gray-900 transition-all duration-200 hover:bg-gray-100 dark:border-gray-700 dark:text-white dark:hover:bg-gray-900'
-          >
-            Contact Support
-          </Link>
-        </div>
+          {/* Contact Support CTA */}
+          <div className='text-center'>
+            <p className='mb-4 text-base text-gray-600 dark:text-gray-300'>
+              Still have questions?
+            </p>
+            <Link
+              href='/contact'
+              className='inline-block rounded-md border-2 border-gray-300 bg-transparent px-6 py-3 text-base font-semibold text-gray-900 transition-all duration-200 hover:bg-gray-100 dark:border-gray-700 dark:text-white dark:hover:bg-gray-900'
+            >
+              Contact Support
+            </Link>
+          </div>
         </div>
       </section>
     </AnimatedSection>

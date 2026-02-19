@@ -2,28 +2,33 @@ import mongoose, { Schema, Document, Model } from 'mongoose'
 
 export interface ISelectedSession {
   sessionId: string
-  date: string
+  dates: string[] // Array supports single-day and two-day (Signature) sessions
   time: string
+  venue?: string // Physical venue for live sessions
+  city?: string // City where the session takes place
+  isTwoDay?: boolean
 }
 
 export interface IEnrollment extends Document {
   name: string
   email: string
   phone: string
+  city?: string // City of interest, captured at registration
   enrollmentReference: string
   paymentStatus: 'pending' | 'success'
   bookingStatus: 'pending' | 'confirmed'
-  // Set at payment initialization — scopes the Paystack reference to this enrollment
   paymentReference?: string
-  // The product type selected during payment initialization
   productType?: string
-  // The backend-determined expected amount (Naira) — used for verification
   expectedAmount?: number
   amountPaid: number
   selectedSession?: ISelectedSession
-  accessTier?: 'virtual' | 'full'
-  checkedIn: boolean
-  checkedInAt?: Date
+  // Derived from productType — virtual | full | consulting
+  accessTier?: 'virtual' | 'full' | 'consulting'
+  // Live check-in tracking — Signature has two check-in events
+  checkedInDay1: boolean
+  checkedInDay1At?: Date
+  checkedInDay2: boolean
+  checkedInDay2At?: Date
   createdAt: Date
   updatedAt: Date
 }
@@ -31,8 +36,11 @@ export interface IEnrollment extends Document {
 const SelectedSessionSchema = new Schema<ISelectedSession>(
   {
     sessionId: { type: String, required: true },
-    date: { type: String, required: true },
+    dates: { type: [String], required: true },
     time: { type: String, required: true },
+    venue: { type: String },
+    city: { type: String },
+    isTwoDay: { type: Boolean, default: false },
   },
   { _id: false },
 )
@@ -56,6 +64,10 @@ const EnrollmentSchema = new Schema<IEnrollment>(
       required: true,
       trim: true,
     },
+    city: {
+      type: String,
+      trim: true,
+    },
     enrollmentReference: {
       type: String,
       required: true,
@@ -71,8 +83,6 @@ const EnrollmentSchema = new Schema<IEnrollment>(
       enum: ['pending', 'confirmed'],
       default: 'pending',
     },
-    // sparse: true allows multiple docs with no paymentReference,
-    // but enforces uniqueness when a value IS present
     paymentReference: {
       type: String,
       unique: true,
@@ -93,13 +103,21 @@ const EnrollmentSchema = new Schema<IEnrollment>(
     },
     accessTier: {
       type: String,
-      enum: ['virtual', 'full'],
+      enum: ['virtual', 'full', 'consulting'],
     },
-    checkedIn: {
+    // Signature Live requires check-in on both days
+    checkedInDay1: {
       type: Boolean,
       default: false,
     },
-    checkedInAt: {
+    checkedInDay1At: {
+      type: Date,
+    },
+    checkedInDay2: {
+      type: Boolean,
+      default: false,
+    },
+    checkedInDay2At: {
       type: Date,
     },
   },

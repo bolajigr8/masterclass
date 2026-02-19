@@ -15,15 +15,13 @@ function generateEnrollmentReference(): string {
   return `ENR-${timestamp}-${randomHex}`
 }
 
-// Basic email regex
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, phone } = body
+    const { name, email, phone, city } = body
 
-    // ── Field presence ──────────────────────────────────────────────────────
     if (!name || !email || !phone) {
       return NextResponse.json(
         {
@@ -34,7 +32,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Email format ────────────────────────────────────────────────────────
     if (!EMAIL_RE.test(email)) {
       return NextResponse.json(
         { error: 'Invalid email format.' },
@@ -42,7 +39,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Phone length ────────────────────────────────────────────────────────
     const cleanPhone = String(phone).replace(/\s+/g, '')
     if (cleanPhone.length < 10) {
       return NextResponse.json(
@@ -51,7 +47,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Name length ─────────────────────────────────────────────────────────
     if (String(name).trim().length < 2) {
       return NextResponse.json(
         { error: 'Name must be at least 2 characters.' },
@@ -61,8 +56,6 @@ export async function POST(request: Request) {
 
     await connectToDatabase()
 
-    // ── Duplicate email check (explicit, before DB write) ───────────────────
-    // The DB unique index is the safety net; this gives a clean error message.
     const existing = await Enrollment.findOne({
       email: email.toLowerCase().trim(),
     }).lean()
@@ -72,7 +65,7 @@ export async function POST(request: Request) {
         {
           error: 'Email already registered.',
           details:
-            'An enrollment with this email address already exists. Each email can only be registered once.',
+            'An enrollment with this email already exists. Each email can only be registered once.',
         },
         { status: 409 },
       )
@@ -84,11 +77,10 @@ export async function POST(request: Request) {
       name: String(name).trim(),
       email: email.toLowerCase().trim(),
       phone: cleanPhone,
+      city: city ? String(city).trim() : undefined,
       enrollmentReference,
-      // All status fields default via schema
     })
 
-    // ── Confirmation email (non-blocking — failure should not fail the request) ──
     sendRegistrationConfirmation({
       name: String(name).trim(),
       email: email.toLowerCase().trim(),
@@ -98,34 +90,22 @@ export async function POST(request: Request) {
     )
 
     return NextResponse.json(
-      {
-        success: true,
-        enrollmentReference,
-        message:
-          'Registration successful. Check your email for your enrollment reference.',
-      },
+      { success: true, enrollmentReference },
       { status: 201 },
     )
   } catch (error: any) {
     console.error('[register] Error:', error)
 
-    // MongoDB duplicate key (race condition fallback)
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern ?? {})[0]
       if (field === 'email') {
         return NextResponse.json(
-          {
-            error: 'Email already registered.',
-            details: 'An enrollment with this email address already exists.',
-          },
+          { error: 'Email already registered.' },
           { status: 409 },
         )
       }
-      // Extremely rare: enrollmentReference collision
       return NextResponse.json(
-        {
-          error: 'Reference generation conflict. Please try again.',
-        },
+        { error: 'Reference generation conflict. Please try again.' },
         { status: 409 },
       )
     }

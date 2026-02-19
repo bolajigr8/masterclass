@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/mongodb'
 import Enrollment from '@/models/Enrollment'
-import { verifyAdminAuth, parsePagination } from '@/lib/adminAuth'
+import { verifyAdminAuth, parsePagination, parseDay } from '@/lib/adminAuth'
 
 /**
- * GET /api/admin/not-checked-in?sessionId=SESSION_ID&page=1&limit=20
+ * GET /api/admin/not-checked-in?sessionId=SESSION_ID&day=1&page=1&limit=20
  *
- * Returns full-access confirmed attendees who have NOT yet checked in.
+ * Returns full-access confirmed attendees who have NOT yet checked in
+ * on the specified day.
+ * day=1 → checkedInDay1: false
+ * day=2 → checkedInDay2: false
  *
- * Requires:  Authorization: Bearer <ADMIN_PASSWORD>
+ * Requires: Authorization: Bearer <ADMIN_PASSWORD>
  */
 export async function GET(request: NextRequest) {
   const authError = verifyAdminAuth(request)
@@ -25,22 +28,26 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const day = parseDay(searchParams)
     const { page, limit, skip } = parsePagination(searchParams)
 
     await connectToDatabase()
+
+    const checkedInField = day === 1 ? 'checkedInDay1' : 'checkedInDay2'
 
     const filter = {
       'selectedSession.sessionId': sessionId,
       paymentStatus: 'success',
       bookingStatus: 'confirmed',
       accessTier: 'full',
-      checkedIn: false,
+      [checkedInField]: false,
     }
 
     const [attendees, totalCount] = await Promise.all([
       Enrollment.find(filter)
         .select(
-          'name email phone enrollmentReference productType selectedSession',
+          'name email phone enrollmentReference productType selectedSession ' +
+            'checkedInDay1 checkedInDay1At checkedInDay2 checkedInDay2At createdAt',
         )
         .sort({ createdAt: -1 })
         .skip(skip)

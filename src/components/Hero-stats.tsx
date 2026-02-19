@@ -158,16 +158,16 @@ export default function HeroStats() {
       {/* Horizontally Scrolling Cities */}
       <div className='relative overflow-hidden pb-10'>
         {/* Left fade */}
-        <div className='absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-[#050b18] to-transparent z-10 pointer-events-none' />
+        <div className='absolute left-0 top-0 bottom-0 w-24 bg-linear-to-r from-[#050b18] to-transparent z-10 pointer-events-none' />
         {/* Right fade */}
-        <div className='absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#050b18] to-transparent z-10 pointer-events-none' />
+        <div className='absolute right-0 top-0 bottom-0 w-24 bg-linear-to-l from-[#050b18] to-transparent z-10 pointer-events-none' />
 
         <div className='flex'>
           {/* Two copies for seamless loop */}
           {[0, 1].map((copy) => (
             <div
               key={copy}
-              className='flex items-center gap-12 flex-shrink-0 animate-marquee'
+              className='flex items-center gap-12 shrink-0 animate-marquee'
               aria-hidden={copy === 1}
             >
               {cities.slice(0, 10).map((city, i) => (

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// ─── Step 1: User Info ───────────────────────────────────────────────────────
+// ─── User Info ────────────────────────────────────────────────────────────────
 
 export const userInfoSchema = z.object({
   name: z
@@ -18,76 +18,89 @@ export const userInfoSchema = z.object({
     .min(10, 'Phone number must be at least 10 digits')
     .max(20, 'Phone number is too long')
     .regex(/^[+\d\s\-()]+$/, 'Please enter a valid phone number'),
+  city: z.string().max(100).trim().optional(),
 })
 
 export type UserInfoFormData = z.infer<typeof userInfoSchema>
 
-// ─── Step 2: Session Selection ───────────────────────────────────────────────
+// ─── Session Selection ────────────────────────────────────────────────────────
+// Users now pick a predefined session by ID — no free date/time input.
 
 export const sessionSelectionSchema = z.object({
-  date: z.string().min(1, 'Please select a date'),
-  time: z.string().min(1, 'Please select a time'),
+  sessionId: z.string().min(1, 'Please select a session'),
 })
 
 export type SessionSelectionFormData = z.infer<typeof sessionSelectionSchema>
 
-// ─── Step 3: Payment / Access Tier ──────────────────────────────────────────
+// ─── Product Types ────────────────────────────────────────────────────────────
+// These must exactly match lib/pricing.ts PRODUCT_TYPES and the frontend plan names.
 
-// These are the exact product type strings the backend accepts.
-// They are display names only — the backend determines the price.
 export const PRODUCT_TYPES = [
-  'Single Masterclass',
-  'Fireside Chat Series',
-  'Developer Bootcamp',
-  '1-on-1 JaaS Consulting',
+  'Virtual Masterclass',
+  'Signature Live Masterclass',
+  'Private JaaS Consulting',
 ] as const
 
 export type ProductType = (typeof PRODUCT_TYPES)[number]
 
-// Display prices shown to users in the UI (must match backend pricing map)
-// The frontend NEVER sends these values — they're for display only.
+/**
+ * Display prices shown in the UI (NGN).
+ * Must stay in sync with backend lib/pricing.ts PRICING_MAP.
+ * These are NEVER sent to the backend — they exist only for frontend display.
+ */
 export const DISPLAY_PRICES: Record<ProductType, number> = {
-  'Single Masterclass': 250_000,
-  'Fireside Chat Series': 95_000,
-  'Developer Bootcamp': 450_000,
-  '1-on-1 JaaS Consulting': 180_000,
+  'Virtual Masterclass': 150_000,
+  'Signature Live Masterclass': 450_000,
+  'Private JaaS Consulting': 350_000,
 }
 
-export const paymentSchema = z.object({
-  productType: z
-    .enum(PRODUCT_TYPES)
-    .catch(() => PRODUCT_TYPES[0])
-    .pipe(
-      z.enum(PRODUCT_TYPES, {
-        message: 'Please select a product type',
-      }),
-    ),
-  accessTier: z.enum(['virtual', 'full'], {
-    message: 'Please select an access tier',
-  }),
-})
+/**
+ * USD display prices — for reference only, payment is in NGN.
+ */
+export const DISPLAY_PRICES_USD: Record<ProductType, string> = {
+  'Virtual Masterclass': '$260',
+  'Signature Live Masterclass': '$650',
+  'Private JaaS Consulting': '$500+',
+}
 
-export type PaymentFormData = z.infer<typeof paymentSchema>
+/**
+ * Access tier is derived from the product — no separate user selection.
+ */
+export const PRODUCT_ACCESS_TIER: Record<
+  ProductType,
+  'virtual' | 'full' | 'consulting'
+> = {
+  'Virtual Masterclass': 'virtual',
+  'Signature Live Masterclass': 'full',
+  'Private JaaS Consulting': 'consulting',
+}
 
-// ─── Full Enrollment State (across all steps) ────────────────────────────────
+// ─── Enrollment State ─────────────────────────────────────────────────────────
 
 export interface CompleteEnrollmentData {
   userInfo: UserInfoFormData
-  session: SessionSelectionFormData
-  payment: PaymentFormData
+  selectedSessionId: string
+  productType: ProductType
   // Set by backend after registration
   enrollmentReference?: string
 }
 
-// ─── Success data returned after payment verification ───────────────────────
+// ─── Success Data ─────────────────────────────────────────────────────────────
 
 export interface EnrollmentSuccessData {
   enrollmentReference: string
   name: string
   email: string
   productType: ProductType
-  selectedSession: { sessionId: string; date: string; time: string }
-  accessTier: 'virtual' | 'full'
+  selectedSession: {
+    sessionId: string
+    dates: string[]
+    time: string
+    venue?: string
+    city?: string
+    isTwoDay?: boolean
+  }
+  accessTier: 'virtual' | 'full' | 'consulting'
   bookingStatus: string
   amountPaid: number
 }

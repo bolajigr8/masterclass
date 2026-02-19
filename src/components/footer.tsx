@@ -86,7 +86,7 @@ export default function Footer() {
             </button>
 
             {/* Tagline */}
-            <p className='text-[13.5px] text-white/40 leading-relaxed max-w-[240px]'>
+            <p className='text-[13.5px] text-white/40 leading-relaxed max-w-60'>
               Democratizing access to premium real estate through
               Joint-Venture-as-a-Service and tokenized ownership.
             </p>
@@ -107,7 +107,7 @@ export default function Footer() {
               <button
                 type='submit'
                 aria-label='Subscribe'
-                className='w-8 h-8 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] flex items-center justify-center flex-shrink-0 transition-all duration-200 hover:shadow-[0_0_14px_rgba(37,99,235,0.5)] active:scale-95'
+                className='w-8 h-8 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] flex items-center justify-center shrink-0 transition-all duration-200 hover:shadow-[0_0_14px_rgba(37,99,235,0.5)] active:scale-95'
               >
                 <Send size={13} className='text-white' />
               </button>
@@ -148,7 +148,7 @@ export default function Footer() {
       <div className='border-t border-white/6' />
 
       {/* Bottom bar */}
-      <div className='max-w-[1280px] mx-auto px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-4'>
+      <div className='max-w-7xl mx-auto px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-4'>
         <p className='text-[12.5px] text-white/30 text-center sm:text-left'>
           © 2026 Trila. All rights reserved. Built for the next generation of
           global landlords.
