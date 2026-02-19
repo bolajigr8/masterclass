@@ -105,9 +105,9 @@ export default function Pricing() {
       className='relative bg-[#050b18] w-full py-20 lg:py-28 px-5 overflow-hidden'
     >
       {/* Background glow */}
-      <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#2563eb]/5 rounded-full blur-[150px] pointer-events-none' />
+      <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-175 h-125 bg-[#2563eb]/5 rounded-full blur-[150px] pointer-events-none' />
 
-      <div className='max-w-[1200px] mx-auto'>
+      <div className='max-w-300 mx-auto'>
         {/* Header */}
         <div
           className={`text-center mb-14 transition-all duration-700 ${
@@ -123,14 +123,14 @@ export default function Pricing() {
           >
             Choose Your Path
           </h2>
-          <p className='mt-4 text-[15px] text-white/50 max-w-[520px] mx-auto leading-relaxed'>
+          <p className='mt-4 text-[15px] text-white/50 max-w-130 mx-auto leading-relaxed'>
             Every tier includes lifetime access to Trila University, certificate
             of completion, and private community membership.
           </p>
         </div>
 
         {/* Cards */}
-        <div className='grid grid-cols-1 lg:grid-cols-3 gap-5 items-start'>
+        <div className='grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch'>
           {plans.map((plan, i) => {
             const Icon = plan.icon
             return (
@@ -156,13 +156,17 @@ export default function Pricing() {
                   </div>
                 )}
 
-                <div
-                  className={`p-6 lg:p-7 flex flex-col gap-6 ${plan.badge ? 'pt-14' : ''}`}
-                >
+                {/*
+                  All cards use the same top padding (pt-14 lg:pt-16) so that
+                  the icon/title and price rows stay vertically aligned across
+                  all three columns, matching the featured card that needs the
+                  extra space for its absolute-positioned badge.
+                */}
+                <div className='p-6 lg:p-7 flex flex-col gap-6 flex-1 pt-14 lg:pt-16'>
                   {/* Icon + Name */}
                   <div className='flex items-start gap-3'>
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${plan.iconBg}`}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${plan.iconBg}`}
                     >
                       <Icon size={18} className={plan.iconColor} />
                     </div>
@@ -198,7 +202,7 @@ export default function Pricing() {
                   <div className='border-t border-white/8' />
 
                   {/* Features */}
-                  <ul className='flex flex-col gap-3'>
+                  <ul className='flex flex-col gap-3 flex-1'>
                     {plan.features.map((feat) => (
                       <li key={feat} className='flex items-start gap-2.5'>
                         <Check
@@ -215,7 +219,7 @@ export default function Pricing() {
                   {/* CTA */}
                   <Link
                     href={plan.ctaHref}
-                    className={`group flex items-center justify-center gap-2.5 font-bold text-[14px] px-6 py-3.5 rounded-full transition-all duration-300 active:scale-[0.97] mt-2 ${
+                    className={`group flex items-center justify-center gap-2.5 font-bold text-[14px] px-6 py-3.5 rounded-full transition-all duration-300 active:scale-[0.97] mt-auto ${
                       plan.featured
                         ? 'bg-[#d4a422] hover:bg-[#c49510] text-[#0a0800] hover:shadow-[0_0_24px_rgba(212,164,34,0.4)]'
                         : 'bg-[#2563eb] hover:bg-[#1d4ed8] text-white hover:shadow-[0_0_24px_rgba(37,99,235,0.4)]'
@@ -241,7 +245,7 @@ export default function Pricing() {
           style={{ transitionDelay: '600ms' }}
         >
           <div className='flex items-center gap-2.5 px-5 py-3 rounded-full border border-white/10 bg-[#0d1a2e]/60 backdrop-blur-sm'>
-            <Shield size={15} className='text-white/40 flex-shrink-0' />
+            <Shield size={15} className='text-white/40 shrink-0' />
             <span className='text-[13px] text-white/45'>
               30-day money-back guarantee · No questions asked · Cancel anytime
             </span>

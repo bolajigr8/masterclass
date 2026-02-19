@@ -47,21 +47,21 @@ export default function Navbar() {
             : 'bg-transparent'
         }`}
       >
-        <div className='max-w-[1280px] mx-auto px-6 lg:px-8'>
-          <div className='flex items-center justify-between h-[68px]'>
+        <div className='max-w-7xl mx-auto px-6 lg:px-8'>
+          <div className='flex items-center justify-between h-17'>
             {/* Logo — scrolls to top */}
             <button
               onClick={() => scrollTo('hero')}
-              className='flex-shrink-0 focus:outline-none'
+              className='shrink-0 focus:outline-none'
               aria-label='Go to top'
             >
-              <div className='bg-white rounded-md px-3 py-1.5 flex items-center'>
+              <div className=' rounded-md px-3 py-1.5 flex items-center'>
                 <Image
                   src='/logo.png'
                   alt='Logo'
-                  width={60}
-                  height={24}
-                  className='h-5 w-auto'
+                  width={120}
+                  height={120}
+                  className=' object-cover'
                 />
               </div>
             </button>
@@ -81,12 +81,12 @@ export default function Navbar() {
 
             {/* Desktop CTA */}
             <div className='hidden lg:flex items-center gap-4'>
-              <Link
-                href='/signin'
+              {/* <Link
+                href='#'
                 className='text-[15px] text-white/80 hover:text-white font-medium transition-colors duration-200'
               >
                 Sign In
-              </Link>
+              </Link> */}
               <button
                 onClick={() => handleNavClick('reserve-access')}
                 className='bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[15px] font-semibold px-5 py-2.5 rounded-full transition-all duration-200 hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] active:scale-95 focus:outline-none'
@@ -110,7 +110,7 @@ export default function Navbar() {
       {/* Mobile Drawer Overlay */}
       <div
         onClick={() => setIsOpen(false)}
-        className={`fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 z-60 bg-black/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
           isOpen
             ? 'opacity-100 pointer-events-auto'
             : 'opacity-0 pointer-events-none'
@@ -119,23 +119,23 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       <div
-        className={`fixed top-0 left-0 bottom-0 z-[70] w-full max-w-[360px] bg-[#080d1a] border-r border-white/10 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${
+        className={`fixed top-0 left-0 bottom-0 z-70 w-full max-w-90 bg-[#080d1a] border-r border-white/10 flex flex-col transition-transform duration-300 ease-in-out lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Drawer Header */}
-        <div className='flex items-center justify-between px-5 h-[68px] border-b border-white/10'>
+        <div className='flex items-center justify-between px-5 h-17 border-b border-white/10'>
           <button
             onClick={() => handleNavClick('hero')}
             className='focus:outline-none'
           >
-            <div className='bg-white rounded-md px-3 py-1.5'>
+            <div className=' rounded-md px-3 py-1.5'>
               <Image
                 src='/logo.png'
                 alt='Logo'
-                width={60}
-                height={24}
-                className='h-5 w-auto'
+                width={120}
+                height={120}
+                className='object-cover'
               />
             </div>
           </button>
@@ -168,7 +168,7 @@ export default function Navbar() {
 
         {/* Drawer Bottom */}
         <div className='mt-auto px-5 pb-8 flex flex-col gap-3'>
-          <div className='border-t border-white/10 pt-5 mb-1'>
+          {/* <div className='border-t border-white/10 pt-5 mb-1'>
             <Link
               href='/signin'
               onClick={() => setIsOpen(false)}
@@ -176,7 +176,7 @@ export default function Navbar() {
             >
               Sign In
             </Link>
-          </div>
+          </div> */}
           <button
             onClick={() => handleNavClick('reserve-access')}
             className='flex items-center justify-center gap-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[15px] font-bold px-5 py-3.5 rounded-full transition-all duration-200 hover:shadow-[0_0_20px_rgba(37,99,235,0.5)] focus:outline-none'

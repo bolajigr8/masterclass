@@ -63,7 +63,7 @@ export default function HeroStats() {
           }`}
           style={{ transitionDelay: '100ms' }}
         >
-          <span className='relative flex h-2.5 w-2.5 flex-shrink-0'>
+          <span className='relative flex h-2.5 w-2.5 shrink-0'>
             <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60' />
             <span className='relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400' />
           </span>
@@ -75,14 +75,14 @@ export default function HeroStats() {
 
         {/* Founder Card */}
         <div
-          className={`flex items-center gap-4 px-5 py-4 rounded-2xl border border-white/10 bg-[#0d1831]/70 backdrop-blur-md w-full max-w-[420px] transition-all duration-700 ${
+          className={`flex items-center gap-4 px-5 py-4 rounded-2xl border border-white/10 bg-[#0d1831]/70 backdrop-blur-md w-full max-w-105 transition-all duration-700 ${
             visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
           style={{ transitionDelay: '220ms' }}
         >
-          <div className='flex-shrink-0 w-14 h-14 rounded-full overflow-hidden border-2 border-white/10'>
+          <div className='shrink-0 w-14 h-14 rounded-full overflow-hidden border-2 border-white/10'>
             <Image
-              src='/femi.png'
+              src='/femi.jpg'
               alt='Femi Olawale'
               width={56}
               height={56}

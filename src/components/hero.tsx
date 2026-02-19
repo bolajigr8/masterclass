@@ -31,13 +31,13 @@ export default function Hero() {
           priority
           className='object-cover object-center opacity-30'
         />
-        <div className='absolute inset-0 bg-gradient-to-b from-[#050b18]/70 via-[#060c1a]/50 to-[#050b18]/95' />
-        <div className='absolute inset-0 bg-gradient-to-r from-[#050b18]/60 via-transparent to-[#050b18]/60' />
+        <div className='absolute inset-0 bg-linear-to-b from-[#050b18]/70 via-[#060c1a]/50 to-[#050b18]/95' />
+        <div className='absolute inset-0 bg-linear-to-r from-[#050b18]/60 via-transparent to-[#050b18]/60' />
       </div>
 
       {/* Subtle grid pattern */}
       <div
-        className='absolute inset-0 z-[1] opacity-[0.04]'
+        className='absolute inset-0 z-1 opacity-[0.04]'
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)`,
           backgroundSize: '60px 60px',
@@ -45,7 +45,7 @@ export default function Hero() {
       />
 
       {/* Decorative building icon */}
-      <div className='absolute top-24 right-12 z-[2] opacity-10 hidden lg:block'>
+      <div className='absolute top-24 right-12 z-2 opacity-10 hidden lg:block'>
         <svg width='80' height='100' viewBox='0 0 80 100' fill='none'>
           <rect
             x='10'
@@ -99,28 +99,29 @@ export default function Hero() {
       </div>
 
       {/* Main content */}
-      <div className='relative z-10 flex flex-col items-center justify-center flex-1 text-center px-5 pt-24 pb-16 lg:pt-26 lg:pb-24'>
+      <div className='relative z-10 flex flex-col items-center justify-center flex-1 text-center px-5 pt-22 pb-16 lg:pt-26 lg:pb-24'>
         {/* Badge */}
+
         <div
-          className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full border border-white/15 bg-[#0d1a2e]/80 backdrop-blur-sm mb-10 transition-all duration-700 ${
+          className={`inline-flex items-start gap-2.5 px-4 py-2.5 rounded-full border border-white/15 bg-[#0d1a2e]/80 backdrop-blur-sm mb-10 transition-all duration-700 ${
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
           style={{ transitionDelay: '100ms' }}
         >
-          <span className='w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse flex-shrink-0' />
-          <span className='text-[11px] sm:text-[12px] font-bold tracking-[0.12em] text-white/90 uppercase'>
+          <span className='w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse shrink-0 mt-1.5' />
+          <span className='text-[11px]  font-bold tracking-[0.12em] text-white/90 uppercase'>
             Masterclass 2026 — Unlocking the $300 Trillion Gated Asset Class
           </span>
         </div>
 
         {/* Headline */}
         <h1
-          className={`font-extrabold text-white leading-[1.05] tracking-tight max-w-[800px] transition-all duration-700 ${
+          className={`font-extrabold text-white leading-[1.05] tracking-tight max-w-200 transition-all duration-700 ${
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
           }`}
           style={{
             transitionDelay: '200ms',
-            fontSize: 'clamp(36px, 6vw, 80px)',
+            fontSize: 'clamp(36px, 6vw, 65px)',
           }}
         >
           Become a Real Developer
@@ -141,7 +142,7 @@ export default function Hero() {
 
         {/* Cities */}
         <p
-          className={`mt-3 text-[13px] sm:text-[15px] text-white/45 max-w-[640px] leading-relaxed transition-all duration-700 ${
+          className={`mt-3 text-[13px] sm:text-[15px] text-white/45 max-w-160 leading-relaxed transition-all duration-700 ${
             mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}
           style={{ transitionDelay: '420ms' }}
@@ -158,7 +159,7 @@ export default function Hero() {
         >
           <button
             onClick={() => scrollTo('reserve-access')}
-            className='group flex items-center gap-3 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[15px] sm:text-[16px] font-bold px-7 py-4 rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(37,99,235,0.55)] active:scale-[0.97] w-full sm:w-auto justify-center min-w-[280px] focus:outline-none'
+            className='group flex items-center gap-3 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-[15px] sm:text-[16px] font-bold px-7 py-4 rounded-full transition-all duration-300 hover:shadow-[0_0_30px_rgba(37,99,235,0.55)] active:scale-[0.97] w-full sm:w-auto justify-center min-w-70 focus:outline-none'
           >
             Secure Your Seat — Limited Capacity
             <ArrowRight
@@ -169,7 +170,7 @@ export default function Hero() {
 
           <button
             onClick={() => scrollTo('reserve-access')}
-            className='group flex items-center gap-3 bg-white/8 hover:bg-white/12 border border-white/20 hover:border-white/30 text-white text-[15px] sm:text-[16px] font-semibold px-7 py-4 rounded-full backdrop-blur-sm transition-all duration-300 active:scale-[0.97] w-full sm:w-auto justify-center min-w-[280px] focus:outline-none'
+            className='group flex items-center gap-3 bg-white/8 hover:bg-white/12 border border-white/20 hover:border-white/30 text-white text-[15px] sm:text-[16px] font-semibold px-7 py-4 rounded-full backdrop-blur-sm transition-all duration-300 active:scale-[0.97] w-full sm:w-auto justify-center min-w-70 focus:outline-none'
           >
             <Play
               size={14}
@@ -181,7 +182,7 @@ export default function Hero() {
       </div>
 
       {/* Bottom fade */}
-      <div className='absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050b18] to-transparent z-[5]' />
+      <div className='absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#050b18] to-transparent z-5' />
     </section>
   )
 }

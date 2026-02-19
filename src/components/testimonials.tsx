@@ -12,47 +12,56 @@ const featuredTestimonials = [
     name: 'Adebayo Ogunlesi',
     title: 'Real Estate Developer, Lagos',
     badge: '₦800M first deal',
-    avatar: '/femi.jpg',
+    avatar: '/testimonial1.jpg',
     rating: 5,
   },
   {
     id: 2,
     quote:
-      '"Before this masterclass I had no idea how to structure a JV. After just 2 days, I walked away with a framework I immediately used to secure a ₦500M land deal in Abuja."',
-    name: 'Tunde Bakare',
-    title: 'Property Developer, Abuja',
-    badge: '₦500M land deal',
-    avatar: '/femi.jpg',
+      "Femi's approach to tokenized real estate opened my eyes to a completely new asset class. The network alone is worth 10x the investment.",
+    name: 'Amara Nwosu',
+    title: 'Investment Analyst, Dubai',
+    avatar: '/testimonial2.jpg',
     rating: 5,
   },
   {
     id: 3,
     quote:
-      '"Femi doesn\'t just teach theory — he shares live deal structures. The tokenization module alone helped me raise $200K from diaspora investors in under 60 days."',
-    name: 'Nkechi Eze',
-    title: 'Investment Strategist, London',
-    badge: '$200K raised',
-    avatar: '/femi.jpg',
+      'From zero real estate experience to owning a portfolio of 12 units across two countries. The Trila Masterclass gave me the frameworks, confidence, and connections.',
+    name: 'Kwame Asante',
+    title: 'Property Developer, Accra',
+    badge: '12 units, 2 countries',
+    avatar: '/testimonial3.jpg',
     rating: 5,
   },
   {
     id: 4,
     quote:
-      '"The network alone was worth 100x the price. I connected with a Dubai-based HNW investor on day one and we\'re now co-developing a luxury project in Dubai Marina."',
-    name: 'Seun Adesanya',
-    title: 'Global Real Estate Entrepreneur',
-    badge: 'Dubai deal closed',
-    avatar: '/femi.jpg',
+      'The private consulting session with Femi was a game-changer. He helped me restructure a stalled project and within 90 days we had full funding.',
+    name: 'Chidima Eze',
+    title: 'Entrepreneur, London',
+    badge: 'Full funding in 90 days',
+    avatar: '/testimonial4.jpg',
     rating: 5,
   },
   {
     id: 5,
     quote:
-      '"I came in skeptical. I left with a signed term sheet. The JaaS model is real and Femi proves it every session with actual numbers from actual projects."',
-    name: 'Emeka Nwosu',
-    title: 'Entrepreneur, Singapore',
-    badge: 'Term sheet signed',
-    avatar: '/femi.jpg',
+      "I've attended masterclasses globally — McKinsey, Harvard, Wharton. Trila's programme is uniquely practical and immediately actionable for African markets.",
+    name: 'Ibrahim Musa',
+    title: 'Fund Manager, Abuja',
+    badge: '$2.4M fund raised',
+    avatar: '/testimonial5.jpg',
+    rating: 5,
+  },
+  {
+    id: 6,
+    quote:
+      'The global network is incredible. I connected with a Singapore-based investor at the masterclass who co-funded my first Canadian development project.',
+    name: 'Oluwaseun Bakare',
+    title: 'Developer, Toronto',
+    badge: 'Cross-border JV deal',
+    avatar: '/testimonial6.jpg',
     rating: 5,
   },
 ]
@@ -61,28 +70,28 @@ const gridTestimonials = [
   {
     id: 6,
     quote:
-      '"Femi\'s approach to tokenized real estate opened my eyes to a completely new asset class. The network alone is worth 10x the investment."',
-    name: 'Amara Nwosu',
-    title: 'Investment Analyst, Dubai',
-    avatar: '/femi.jpg',
+      '"The JaaS Blueprint completely transformed how I structure deals. Within 6 months of the masterclass, I closed my first ₦800M development project with zero personal capital."',
+    name: 'Adebayo Ogunlesi',
+    title: 'Real Estate Developer, Lagos',
+    avatar: '/testimonial1.jpg',
     rating: 5,
   },
   {
     id: 7,
     quote:
-      '"From zero real estate experience to owning a portfolio of 12 units across two countries. The Trila Masterclass gave me the frameworks, confidence, and connections to move fast."',
-    name: 'Kwame Asante',
-    title: 'Property Developer, Accra',
-    avatar: '/femi.jpg',
+      "Femi's approach to tokenized real estate opened my eyes to a completely new asset class. The network alone is worth 10x the investment.",
+    name: 'Amara Nwosu',
+    title: 'Investment Analyst, Dubai',
+    avatar: '/testimonial2.jpg',
     rating: 5,
   },
   {
     id: 8,
     quote:
-      '"The private consulting session with Femi was a game-changer. He helped me restructure a stalled project and within 90 days we had full funding."',
-    name: 'Chidinma Eze',
-    title: 'Entrepreneur, London',
-    avatar: '/femi.jpg',
+      'From zero real estate experience to owning a portfolio of 12 units across two countries. The Trila Masterclass gave me the frameworks, confidence, and connections.',
+    name: 'Kwame Asante',
+    title: 'Property Developer, Accra',
+    avatar: '/testimonial3.jpg',
     rating: 5,
   },
 ]
@@ -158,9 +167,9 @@ export default function Testimonials() {
       className='relative bg-[#050b18] w-full py-20 lg:py-28 px-5 overflow-hidden'
     >
       {/* Glow */}
-      <div className='absolute top-0 right-1/3 w-[500px] h-[400px] bg-[#d4a422]/4 rounded-full blur-[150px] pointer-events-none' />
+      <div className='absolute top-0 right-1/3 w-125 h-100 bg-[#d4a422]/4 rounded-full blur-[150px] pointer-events-none' />
 
-      <div className='max-w-[1100px] mx-auto'>
+      <div className='max-w-275 mx-auto'>
         {/* Header */}
         <div
           className={`text-center mb-12 transition-all duration-700 ${
@@ -176,7 +185,7 @@ export default function Testimonials() {
           >
             Hear From Our Alumni
           </h2>
-          <p className='mt-4 text-[15px] text-white/50 max-w-[420px] mx-auto'>
+          <p className='mt-4 text-[15px] text-white/50 max-w-105 mx-auto'>
             Real results from real entrepreneurs who took the leap.
           </p>
         </div>
@@ -201,7 +210,7 @@ export default function Testimonials() {
             }`}
           >
             {/* Avatar */}
-            <div className='flex-shrink-0'>
+            <div className='shrink-0'>
               <div className='w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-white/15'>
                 <Image
                   src={active.avatar}
@@ -285,7 +294,7 @@ export default function Testimonials() {
                 {t.quote}
               </p>
               <div className='flex items-center gap-3 pt-1 border-t border-white/6'>
-                <div className='w-9 h-9 rounded-full overflow-hidden border border-white/10 flex-shrink-0'>
+                <div className='w-9 h-9 rounded-full overflow-hidden border border-white/10 shrink-0'>
                   <Image
                     src={t.avatar}
                     alt={t.name}

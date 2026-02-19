@@ -36,10 +36,10 @@ const footerLinks: Record<
 }
 
 const socials = [
-  { icon: FaTwitter, href: 'https://twitter.com', label: 'Twitter' },
-  { icon: FaLinkedinIn, href: 'https://linkedin.com', label: 'LinkedIn' },
-  { icon: FaInstagram, href: 'https://instagram.com', label: 'Instagram' },
-  { icon: FaYoutube, href: 'https://youtube.com', label: 'YouTube' },
+  { icon: FaTwitter, href: '#', label: 'Twitter' },
+  { icon: FaLinkedinIn, href: '#', label: 'LinkedIn' },
+  { icon: FaInstagram, href: '#', label: 'Instagram' },
+  { icon: FaYoutube, href: '#', label: 'YouTube' },
 ]
 
 export default function Footer() {
@@ -61,10 +61,10 @@ export default function Footer() {
       className='relative bg-[#030810] border-t border-white/6 w-full overflow-hidden'
     >
       {/* Subtle top glow */}
-      <div className='absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[120px] bg-[#2563eb]/5 blur-[80px] pointer-events-none' />
+      <div className='absolute top-0 left-1/2 -translate-x-1/2 w-150 h-30 bg-[#2563eb]/5 blur-[80px] pointer-events-none' />
 
       {/* Main Footer Content */}
-      <div className='max-w-[1280px] mx-auto px-6 lg:px-8 pt-16 pb-10'>
+      <div className='max-w-7xl mx-auto px-6 lg:px-8 pt-16 pb-10'>
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8'>
           {/* Col 1 — Brand */}
           <div className='flex flex-col gap-5'>
@@ -74,13 +74,13 @@ export default function Footer() {
               className='inline-block w-fit focus:outline-none'
               aria-label='Back to top'
             >
-              <div className='bg-white rounded-md px-3 py-1.5'>
+              <div className=' rounded-md px-3 py-1.5'>
                 <Image
                   src='/logo.png'
                   alt='Trila Logo'
-                  width={60}
-                  height={24}
-                  className='h-5 w-auto'
+                  width={120}
+                  height={120}
+                  className='object-cover'
                 />
               </div>
             </button>
