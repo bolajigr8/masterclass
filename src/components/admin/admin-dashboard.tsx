@@ -355,7 +355,9 @@ export default function AdminDashboard() {
         )}
 
         {/* ── QR Code — one for each day ───────────────────────────────── */}
-        <div className={`grid gap-6 ${isTwoDay ? 'lg:grid-cols-2' : ''}`}>
+        <div
+          className={`grid gap-6 ${isTwoDay ? 'sm:grid-cols-2' : 'max-w-sm mx-auto w-full'}`}
+        >
           <QRCodeDisplay
             sessionId={selectedSession.sessionId}
             day={1}
