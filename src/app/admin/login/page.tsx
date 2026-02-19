@@ -22,7 +22,7 @@ export default function AdminLoginPage() {
 
     if (valid) {
       localStorage.setItem('admin_password', password.trim())
-      router.replace('/admin')
+      router.replace('/admin/dashboard')
     } else {
       setError('Incorrect password. Please try again.')
       setIsLoading(false)
