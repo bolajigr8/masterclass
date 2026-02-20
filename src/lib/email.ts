@@ -409,3 +409,324 @@ export async function sendTierChangedToVirtualEmail(
     html,
   })
 }
+
+/**
+ * Additional email templates appended to email.ts.
+ * These functions follow the exact same pattern as the existing ones —
+ * same base(), infoBox(), alertBox(), primaryButton() helpers,
+ * same sendEmail() wrapper, same FROM_EMAIL / FROM_NAME constants.
+ *
+ * HOW TO INTEGRATE:
+ * Copy every export below into the bottom of your existing lib/email.ts file.
+ * The imports (sgMail, base, infoBox, etc.) are already defined there.
+ */
+
+// ─── 6. Virtual Session 24h Reminder ──────────────────────────────────────────
+
+export interface ReminderEmailParams {
+  name: string
+  email: string
+  enrollmentReference: string
+  sessionLabel: string // e.g. "Series A — March 2026"
+  sessionDate: string // ISO date of the NEXT upcoming session
+  sessionTime: string // displayTime, e.g. "6:00 PM WAT"
+  sessionNumber: number // e.g. 2 (out of 4)
+  totalSessions: number // always 4 for virtual
+  webinarLink: string
+  zoomMeetingId?: string
+  zoomPasscode?: string
+}
+
+export async function sendVirtualSessionReminder24h(
+  params: ReminderEmailParams,
+): Promise<void> {
+  const {
+    name,
+    email,
+    enrollmentReference,
+    sessionLabel,
+    sessionDate,
+    sessionTime,
+    sessionNumber,
+    totalSessions,
+    webinarLink,
+    zoomMeetingId,
+    zoomPasscode,
+  } = params
+
+  const dateFormatted = (() => {
+    const [y, m, d] = sessionDate.split('-').map(Number)
+    return new Date(y, m - 1, d).toLocaleDateString('en-NG', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  })()
+
+  const zoomBlock =
+    zoomMeetingId || zoomPasscode
+      ? `
+    <div style="background:#0b1828;border:1px solid #1e3050;border-radius:8px;padding:16px 24px;margin:16px 0;">
+      <p style="margin:0 0 10px;color:#5a7a9a;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;">Zoom Details</p>
+      ${zoomMeetingId ? `<p style="margin:6px 0;font-size:14px;color:#c8d8f0;"><span style="color:#5a7a9a;display:inline-block;min-width:120px;">Meeting ID</span><code style="background:#0d1a2e;padding:2px 8px;border-radius:4px;">${zoomMeetingId}</code></p>` : ''}
+      ${zoomPasscode ? `<p style="margin:6px 0;font-size:14px;color:#c8d8f0;"><span style="color:#5a7a9a;display:inline-block;min-width:120px;">Passcode</span><code style="background:#0d1a2e;padding:2px 8px;border-radius:4px;">${zoomPasscode}</code></p>` : ''}
+    </div>`
+      : ''
+
+  const html = base(`
+    <h2 style="color:#ffffff;margin-top:0;font-size:22px;">Session Tomorrow, ${name}! ⏰</h2>
+    <p style="color:#8aa8c8;line-height:1.7;font-size:15px;">
+      This is your 24-hour reminder for <strong style="color:#ffffff;">Session ${sessionNumber} of ${totalSessions}</strong>
+      from your <strong style="color:#ffffff;">${sessionLabel}</strong> masterclass.
+    </p>
+    ${infoBox(`
+      ${infoRow('Programme', sessionLabel)}
+      ${infoRow('Session', `${sessionNumber} of ${totalSessions}`)}
+      ${infoRow('Date', dateFormatted)}
+      ${infoRow('Time', sessionTime)}
+      ${infoRow('Reference', `<code style="background:#0d1a2e;padding:3px 8px;border-radius:4px;font-family:monospace;color:#4a9eff;">${enrollmentReference}</code>`)}
+    `)}
+    ${alertBox(
+      `
+      <p style="margin:0 0 16px;color:#4a9eff;font-weight:bold;font-size:14px;">🔗 Your Zoom Join Link</p>
+      <div style="margin-bottom:16px;">
+        ${primaryButton('Join Session ' + sessionNumber + ' →', webinarLink)}
+      </div>
+      <p style="margin:0;color:#4a6080;font-size:12px;word-break:break-all;">${webinarLink}</p>
+      <p style="margin:10px 0 0;color:#5a7a9a;font-size:12px;">Link becomes active 5 minutes before the session starts.</p>
+    `,
+      '#4a9eff',
+      '#0a1220',
+    )}
+    ${zoomBlock}
+    <p style="color:#8aa8c8;line-height:1.7;margin-top:24px;font-size:14px;">See you tomorrow!<br/>
+    <strong style="color:#c8d8f0;">The Trila Masterclass Team</strong></p>
+  `)
+
+  await sendEmail({
+    to: email,
+    from: { email: FROM_EMAIL, name: FROM_NAME },
+    subject: `Session Tomorrow — ${sessionLabel} Session ${sessionNumber} at ${sessionTime}`,
+    html,
+  })
+}
+
+// ─── 7. Virtual Session 1h Reminder ───────────────────────────────────────────
+
+export async function sendVirtualSessionReminder1h(
+  params: ReminderEmailParams,
+): Promise<void> {
+  const {
+    name,
+    email,
+    enrollmentReference,
+    sessionLabel,
+    sessionDate,
+    sessionTime,
+    sessionNumber,
+    totalSessions,
+    webinarLink,
+    zoomMeetingId,
+    zoomPasscode,
+  } = params
+
+  const dateFormatted = (() => {
+    const [y, m, d] = sessionDate.split('-').map(Number)
+    return new Date(y, m - 1, d).toLocaleDateString('en-NG', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    })
+  })()
+
+  const zoomBlock =
+    zoomMeetingId || zoomPasscode
+      ? `
+    <div style="background:#0b1828;border:1px solid #1e3050;border-radius:8px;padding:16px 24px;margin:16px 0;">
+      <p style="margin:0 0 10px;color:#5a7a9a;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.1em;">Zoom Details</p>
+      ${zoomMeetingId ? `<p style="margin:6px 0;font-size:14px;color:#c8d8f0;"><span style="color:#5a7a9a;display:inline-block;min-width:120px;">Meeting ID</span><code style="background:#0d1a2e;padding:2px 8px;border-radius:4px;">${zoomMeetingId}</code></p>` : ''}
+      ${zoomPasscode ? `<p style="margin:6px 0;font-size:14px;color:#c8d8f0;"><span style="color:#5a7a9a;display:inline-block;min-width:120px;">Passcode</span><code style="background:#0d1a2e;padding:2px 8px;border-radius:4px;">${zoomPasscode}</code></p>` : ''}
+    </div>`
+      : ''
+
+  const html = base(`
+    <h2 style="color:#ffffff;margin-top:0;font-size:22px;">Starting in 1 Hour, ${name}! 🚀</h2>
+    <p style="color:#8aa8c8;line-height:1.7;font-size:15px;">
+      <strong style="color:#ffffff;">Session ${sessionNumber} of ${totalSessions}</strong> starts in <strong style="color:#d4a422;">approximately 1 hour</strong>.
+      Join the Zoom a few minutes early so we can start on time.
+    </p>
+    ${infoBox(`
+      ${infoRow('Session', `${sessionNumber} of ${totalSessions}`)}
+      ${infoRow('Today', dateFormatted)}
+      ${infoRow('Starts At', sessionTime)}
+    `)}
+    ${alertBox(
+      `
+      <p style="margin:0 0 16px;color:#28a745;font-weight:bold;font-size:15px;">⚡ Join Now</p>
+      <div style="margin-bottom:16px;">
+        ${primaryButton('Join Session →', webinarLink)}
+      </div>
+      <p style="margin:0;color:#4a6080;font-size:12px;word-break:break-all;">${webinarLink}</p>
+    `,
+      '#28a745',
+      '#0a1a0f',
+    )}
+    ${zoomBlock}
+    <p style="color:#8aa8c8;line-height:1.7;margin-top:24px;font-size:14px;">See you in there!<br/>
+    <strong style="color:#c8d8f0;">The Trila Masterclass Team</strong></p>
+  `)
+
+  await sendEmail({
+    to: email,
+    from: { email: FROM_EMAIL, name: FROM_NAME },
+    subject: `Starting in 1 Hour — ${sessionLabel} Session ${sessionNumber}`,
+    html,
+  })
+}
+
+// ─── 8. Waitlist Joined Confirmation ──────────────────────────────────────────
+
+export interface WaitlistJoinedParams {
+  name: string
+  email: string
+  productType: string
+  sessionLabel: string
+  position: number
+}
+
+export async function sendWaitlistJoinedEmail(
+  params: WaitlistJoinedParams,
+): Promise<void> {
+  const { name, email, productType, sessionLabel, position } = params
+
+  const html = base(`
+    <h2 style="color:#ffffff;margin-top:0;font-size:22px;">You're on the Waitlist, ${name}</h2>
+    <p style="color:#8aa8c8;line-height:1.7;font-size:15px;">
+      This session is currently at capacity, but we've added you to the waitlist for
+      <strong style="color:#ffffff;">${productType} — ${sessionLabel}</strong>.
+    </p>
+    ${infoBox(`
+      ${infoRow('Programme', productType)}
+      ${infoRow('Session', sessionLabel)}
+      ${infoRow('Your Position', `#${position} on the waitlist`)}
+    `)}
+    ${alertBox(`
+      <p style="margin:0 0 8px;color:#d4a422;font-weight:bold;font-size:14px;">What happens next?</p>
+      <p style="margin:0;color:#b08a1a;font-size:14px;line-height:1.7;">
+        When a spot opens, we'll email you immediately. You'll have <strong>24 hours</strong>
+        to confirm and complete payment. After that, the spot moves to the next person.
+        We'll keep you updated.
+      </p>
+    `)}
+    <p style="color:#8aa8c8;line-height:1.7;margin-top:24px;font-size:14px;">Thank you for your patience.<br/>
+    <strong style="color:#c8d8f0;">The Trila Masterclass Team</strong></p>
+  `)
+
+  await sendEmail({
+    to: email,
+    from: { email: FROM_EMAIL, name: FROM_NAME },
+    subject: `Waitlist Confirmed — ${productType} · Position #${position}`,
+    html,
+  })
+}
+
+// ─── 9. Waitlist Spot Available ────────────────────────────────────────────────
+
+export interface WaitlistSpotParams {
+  name: string
+  email: string
+  productType: string
+  sessionLabel: string
+  confirmUrl: string // e.g. https://trila.co/waitlist/confirm?token=XXX
+  expiresInHours: number // always 24
+}
+
+export async function sendWaitlistSpotAvailableEmail(
+  params: WaitlistSpotParams,
+): Promise<void> {
+  const { name, email, productType, sessionLabel, confirmUrl, expiresInHours } =
+    params
+
+  const html = base(`
+    <h2 style="color:#ffffff;margin-top:0;font-size:22px;">A Spot Just Opened, ${name}! 🎉</h2>
+    <p style="color:#8aa8c8;line-height:1.7;font-size:15px;">
+      Great news — a spot has opened in <strong style="color:#ffffff;">${productType} — ${sessionLabel}</strong>.
+      You have <strong style="color:#d4a422;">${expiresInHours} hours</strong> to confirm your place before it moves to the next person.
+    </p>
+    ${alertBox(
+      `
+      <p style="margin:0 0 16px;color:#28a745;font-weight:bold;font-size:15px;">⚡ Claim Your Spot</p>
+      <p style="margin:0 0 16px;color:#8aa8c8;font-size:14px;line-height:1.6;">
+        Click below to confirm and complete your payment. This link expires in <strong style="color:#d4a422;">${expiresInHours} hours</strong>.
+      </p>
+      <div style="margin-bottom:16px;">
+        ${primaryButton('Confirm My Spot →', confirmUrl)}
+      </div>
+      <p style="margin:0;color:#4a6080;font-size:12px;word-break:break-all;">${confirmUrl}</p>
+    `,
+      '#28a745',
+      '#0a1a0f',
+    )}
+    ${infoBox(`
+      ${infoRow('Programme', productType)}
+      ${infoRow('Session', sessionLabel)}
+      ${infoRow('Expires', `${expiresInHours} hours from now`)}
+    `)}
+    <p style="color:#5a7a9a;font-size:13px;margin-top:24px;">
+      If you no longer want this spot, you can simply ignore this email and it will automatically pass to the next person.
+    </p>
+    <p style="color:#8aa8c8;line-height:1.7;margin-top:12px;font-size:14px;">
+    <strong style="color:#c8d8f0;">The Trila Masterclass Team</strong></p>
+  `)
+
+  await sendEmail({
+    to: email,
+    from: { email: FROM_EMAIL, name: FROM_NAME },
+    subject: `A Spot Opened for You — Confirm Within ${expiresInHours} Hours`,
+    html,
+  })
+}
+
+// ─── 10. Admin Notification Blast ─────────────────────────────────────────────
+
+export interface AdminNotifyParams {
+  recipients: Array<{ name: string; email: string }>
+  subject: string
+  messageBody: string // plain text — will be wrapped in the branded template
+  senderName?: string // defaults to 'The Trila Masterclass Team'
+}
+
+export async function sendAdminNotificationBlast(
+  params: AdminNotifyParams,
+): Promise<void> {
+  const { recipients, subject, messageBody, senderName } = params
+
+  const signature = senderName ?? 'The Trila Masterclass Team'
+
+  // Send in batches to avoid rate limits (SendGrid allows 1000/batch)
+  const BATCH_SIZE = 100
+  const batches: (typeof recipients)[] = []
+  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+    batches.push(recipients.slice(i, i + BATCH_SIZE))
+  }
+
+  for (const batch of batches) {
+    await Promise.all(
+      batch.map(({ name, email }) => {
+        const personalizedBody = messageBody.replace(/\{name\}/g, name)
+        const html = base(`
+          <p style="color:#8aa8c8;line-height:1.8;font-size:15px;white-space:pre-line;">${personalizedBody}</p>
+          <p style="color:#8aa8c8;line-height:1.7;margin-top:28px;font-size:14px;">
+          Best regards,<br/><strong style="color:#c8d8f0;">${signature}</strong></p>
+        `)
+        return sendEmail({
+          to: email,
+          from: { email: FROM_EMAIL, name: FROM_NAME },
+          subject,
+          html,
+        })
+      }),
+    )
+  }
+}

@@ -36,10 +36,17 @@ const footerLinks: Record<
 }
 
 const socials = [
-  { icon: FaTwitter, href: '#', label: 'Twitter' },
-  { icon: FaLinkedinIn, href: '#', label: 'LinkedIn' },
-  { icon: FaInstagram, href: '#', label: 'Instagram' },
-  { icon: FaYoutube, href: '#', label: 'YouTube' },
+  { icon: FaTwitter, href: 'https://x.com/Trila_inc', label: 'Twitter' },
+  {
+    icon: FaLinkedinIn,
+    href: 'https://www.linkedin.com/company/trilainc/',
+    label: 'LinkedIn',
+  },
+  {
+    icon: FaInstagram,
+    href: 'https://www.instagram.com/trila_inc/',
+    label: 'Instagram',
+  },
 ]
 
 export default function Footer() {

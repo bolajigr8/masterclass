@@ -17,8 +17,8 @@ const contactInfo = [
   {
     icon: Mail,
     label: 'Email',
-    value: 'masterclass@trila.co',
-    href: 'mailto:masterclass@trila.co',
+    value: 'masterclass@trila.pro',
+    href: 'masterclass@trila.pro',
   },
   {
     icon: Phone,

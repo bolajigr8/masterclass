@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/send-reminders",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/process-waitlist",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
