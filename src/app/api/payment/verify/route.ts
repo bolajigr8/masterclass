@@ -29,9 +29,8 @@ export async function POST(request: Request) {
       reference,
       enrollmentReference,
       productType,
-      // Session data from session-config (resolved on frontend from sessionId)
       sessionId,
-      sessionDates, // string[] — ['2026-03-14'] or ['2026-03-14', '2026-03-15']
+      sessionDates,
       sessionTime,
       sessionVenue,
       sessionCity,
@@ -147,12 +146,13 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Validation 4: Idempotency guard ─────────────────────────────────────
+    // ── Validation 4: Idempotency guard ──────────────────────────────────────
     if (enrollment.paymentStatus === 'success') {
       return NextResponse.json(
         {
           success: true,
           alreadyProcessed: true,
+          emailSent: true, // email was sent during the original payment
           enrollment: buildEnrollmentResponse(enrollment),
         },
         { status: 200 },
@@ -194,7 +194,7 @@ export async function POST(request: Request) {
 
     await enrollment.save()
 
-    // ── Dispatch confirmation email ───────────────────────────────────────────
+    // ── Dispatch confirmation email (awaited, fails gracefully) ──────────────
     const emailParams = {
       name: enrollment.name,
       email: enrollment.email,
@@ -207,24 +207,26 @@ export async function POST(request: Request) {
       isTwoDay: Boolean(isTwoDay),
     }
 
-    if (accessTier === 'virtual') {
-      sendVirtualAccessConfirmation(emailParams).catch((err) =>
-        console.error('[payment/verify] Virtual email error:', err),
-      )
-    } else if (accessTier === 'full') {
-      sendFullAccessConfirmation(emailParams).catch((err) =>
-        console.error('[payment/verify] Full-access email error:', err),
-      )
-    } else if (accessTier === 'consulting') {
-      sendConsultingConfirmation(emailParams).catch((err) =>
-        console.error('[payment/verify] Consulting email error:', err),
-      )
+    let emailSent = false
+    try {
+      if (accessTier === 'virtual') {
+        await sendVirtualAccessConfirmation(emailParams)
+      } else if (accessTier === 'full') {
+        await sendFullAccessConfirmation(emailParams)
+      } else if (accessTier === 'consulting') {
+        await sendConsultingConfirmation(emailParams)
+      }
+      emailSent = true
+    } catch (emailErr) {
+      // Email failed — log it but DO NOT throw. Payment is already confirmed.
+      console.error('[payment/verify] Confirmation email failed:', emailErr)
     }
 
     return NextResponse.json(
       {
         success: true,
         message: 'Payment verified and enrollment confirmed.',
+        emailSent,
         enrollment: buildEnrollmentResponse(enrollment),
       },
       { status: 200 },
