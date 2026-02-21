@@ -61,16 +61,16 @@ const partners = [
 ]
 
 const cities = [
-  'New York',
-  'Toronto',
-  'Abuja',
-  'Accra',
-  'Nairobi',
-  'Johannesburg',
-  'Lagos',
-  'Dubai',
-  'Singapore',
-  'London',
+  { name: 'New York', code: 'us' },
+  { name: 'Toronto', code: 'ca' },
+  { name: 'Abuja', code: 'ng' },
+  { name: 'Accra', code: 'gh' },
+  { name: 'Nairobi', code: 'ke' },
+  { name: 'Johannesburg', code: 'za' },
+  { name: 'Lagos', code: 'ng' },
+  { name: 'Dubai', code: 'ae' },
+  { name: 'Singapore', code: 'sg' },
+  { name: 'London', code: 'gb' },
 ]
 
 export default function HeroStats() {
@@ -315,9 +315,17 @@ export default function HeroStats() {
             {cities.map((city, i) => (
               <span
                 key={`a-${i}`}
-                className='text-[15px] sm:text-[17px] font-semibold text-white/60 whitespace-nowrap hover:text-white/90 transition-colors duration-200 cursor-default'
+                className='flex items-center gap-2.5 text-[15px] sm:text-[17px] font-semibold text-white/60 whitespace-nowrap hover:text-white/90 transition-colors duration-200 cursor-default'
               >
-                {city}
+                <img
+                  src={`https://flagcdn.com/w20/${city.code}.png`}
+                  srcSet={`https://flagcdn.com/w40/${city.code}.png 2x`}
+                  width={20}
+                  height={15}
+                  alt={city.name}
+                  className='rounded-sm opacity-80 shrink-0'
+                />
+                {city.name}
               </span>
             ))}
             <span className='text-white/20 text-lg'>·</span>
@@ -329,9 +337,17 @@ export default function HeroStats() {
             {cities.map((city, i) => (
               <span
                 key={`b-${i}`}
-                className='text-[15px] sm:text-[17px] font-semibold text-white/60 whitespace-nowrap hover:text-white/90 transition-colors duration-200 cursor-default'
+                className='flex items-center gap-2.5 text-[15px] sm:text-[17px] font-semibold text-white/60 whitespace-nowrap hover:text-white/90 transition-colors duration-200 cursor-default'
               >
-                {city}
+                <img
+                  src={`https://flagcdn.com/w20/${city.code}.png`}
+                  srcSet={`https://flagcdn.com/w40/${city.code}.png 2x`}
+                  width={20}
+                  height={15}
+                  alt={city.name}
+                  className='rounded-sm opacity-80 shrink-0'
+                />
+                {city.name}
               </span>
             ))}
             <span className='text-white/20 text-lg'>·</span>

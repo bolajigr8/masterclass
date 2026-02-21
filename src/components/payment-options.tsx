@@ -515,6 +515,13 @@ export default function PaymentOptions() {
                   ;(e.currentTarget as HTMLButtonElement).style.boxShadow =
                     'none'
                 }}
+                onClick={() =>
+                  scrollTo({
+                    top:
+                      document.getElementById('reserve-access')?.offsetTop ?? 0,
+                    behavior: 'smooth',
+                  })
+                }
               >
                 Contact Support
                 <ArrowRight
