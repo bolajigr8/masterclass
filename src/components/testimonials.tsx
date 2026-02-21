@@ -18,11 +18,10 @@ const featuredTestimonials = [
   {
     id: 2,
     quote:
-      "Femi's approach to tokenized real estate opened my eyes to a completely new asset class. The network alone is worth 10x the investment.",
+      "Femi's approach to fractional ownership and STR opened my eyes to a completely new asset class. The network alone is worth 10x the investment.",
     name: 'Amara Nwosu',
-    badge: '1Investment Analyst, Dubai',
-
     title: 'Investment Analyst, Dubai',
+    badge: '3 fractional projects',
     avatar: '/testimonial2.jpg',
     rating: 5,
   },
@@ -40,7 +39,7 @@ const featuredTestimonials = [
     id: 4,
     quote:
       'The private consulting session with Femi was a game-changer. He helped me restructure a stalled project and within 90 days we had full funding.',
-    name: 'Chidima Eze',
+    name: 'Chidinma Eze',
     title: 'Entrepreneur, London',
     badge: 'Full funding in 90 days',
     avatar: '/testimonial4.jpg',
@@ -70,21 +69,12 @@ const featuredTestimonials = [
 
 const gridTestimonials = [
   {
-    id: 6,
+    id: 7,
     quote:
       '"The JaaS Blueprint completely transformed how I structure deals. Within 6 months of the masterclass, I closed my first ₦800M development project with zero personal capital."',
     name: 'Adebayo Ogunlesi',
     title: 'Real Estate Developer, Lagos',
     avatar: '/testimonial1.jpg',
-    rating: 5,
-  },
-  {
-    id: 7,
-    quote:
-      "Femi's approach to tokenized real estate opened my eyes to a completely new asset class. The network alone is worth 10x the investment.",
-    name: 'Amara Nwosu',
-    title: 'Investment Analyst, Dubai',
-    avatar: '/testimonial2.jpg',
     rating: 5,
   },
   {
@@ -94,6 +84,15 @@ const gridTestimonials = [
     name: 'Kwame Asante',
     title: 'Property Developer, Accra',
     avatar: '/testimonial3.jpg',
+    rating: 5,
+  },
+  {
+    id: 9,
+    quote:
+      'The private consulting session with Femi was a game-changer. He helped me restructure a stalled project and within 90 days we had full funding.',
+    name: 'Chidinma Eze',
+    title: 'Entrepreneur, London',
+    avatar: '/testimonial4.jpg',
     rating: 5,
   },
 ]
@@ -188,7 +187,8 @@ export default function Testimonials() {
             Hear From Our Alumni
           </h2>
           <p className='mt-4 text-[15px] text-white/50 max-w-105 mx-auto'>
-            Real results from real entrepreneurs who took the leap.
+            Real results from real entrepreneurs who took the leap with Trila's
+            pioneer real estate infrastructure.
           </p>
         </div>
 
@@ -312,6 +312,23 @@ export default function Testimonials() {
                   <p className='text-white/40 text-[11.5px]'>{t.title}</p>
                 </div>
               </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Stats Bar */}
+        <div className='mt-16 flex flex-wrap items-center justify-center gap-8 sm:gap-12'>
+          {[
+            { value: '200K+', label: 'Community Members' },
+            { value: '4.9/5', label: 'Average Rating' },
+            { value: '98%', label: 'Would Recommend' },
+            { value: '₦1.2T+', label: 'GDV Generated' },
+          ].map((stat) => (
+            <div key={stat.label} className='text-center'>
+              <p className='text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-linear-to-r from-[#c9a84c] to-[#e8d5a0]'>
+                {stat.value}
+              </p>
+              <p className='text-white/25 text-xs mt-1'>{stat.label}</p>
             </div>
           ))}
         </div>

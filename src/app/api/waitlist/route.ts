@@ -3,8 +3,8 @@ import crypto from 'crypto'
 import connectToDatabase from '@/lib/mongodb'
 import Enrollment from '@/models/Enrollment'
 import Waitlist from '@/models/Waitlist'
-import { findSessionById } from '@/lib/session-config'
 import { sendWaitlistJoinedEmail } from '@/lib/email'
+import { findSessionByIdFromDB } from '@/lib/session-db'
 
 /**
  * POST /api/waitlist
@@ -12,13 +12,16 @@ import { sendWaitlistJoinedEmail } from '@/lib/email'
  *
  * Validates the session is genuinely at capacity, then adds the user to the
  * waitlist queue. Sends a confirmation email with their position.
+ *
+ * Session config is now read from MongoDB via findSessionByIdFromDB()
+ * instead of the static session-config.ts file.
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { name, email, phone, city, productType, sessionId } = body
 
-    // ── Validate required fields ──────────────────────────────────────────
+    // ── Validate required fields ───────────────────────────────────────────
     if (
       !name?.trim() ||
       !email?.trim() ||
@@ -43,8 +46,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Resolve session config ─────────────────────────────────────────────
-    const sessionConfig = findSessionById(sessionId)
+    await connectToDatabase()
+
+    // ── Resolve session config from DB ─────────────────────────────────────
+    const sessionConfig = await findSessionByIdFromDB(sessionId)
     if (!sessionConfig) {
       return NextResponse.json(
         {
@@ -54,8 +59,6 @@ export async function POST(request: Request) {
         { status: 404 },
       )
     }
-
-    await connectToDatabase()
 
     // ── Check the session is actually at capacity ──────────────────────────
     const confirmedCount = await Enrollment.countDocuments({
@@ -77,7 +80,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Check the user is not already enrolled ────────────────────────────
+    // ── Check the user is not already enrolled ─────────────────────────────
     const existingEnrollment = await Enrollment.findOne({
       email: cleanEmail,
       'selectedSession.sessionId': sessionId,
@@ -93,7 +96,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Check for duplicate waitlist entry ────────────────────────────────
+    // ── Check for duplicate waitlist entry ─────────────────────────────────
     const existing = await Waitlist.findOne({
       email: cleanEmail,
       sessionId,
@@ -118,7 +121,7 @@ export async function POST(request: Request) {
     )
     const position = (lastEntry?.position ?? 0) + 1
 
-    // ── Generate unique confirmation token ────────────────────────────────
+    // ── Generate unique confirmation token ─────────────────────────────────
     const confirmationToken = crypto.randomBytes(32).toString('hex')
 
     // ── Create waitlist entry ──────────────────────────────────────────────
@@ -134,7 +137,7 @@ export async function POST(request: Request) {
       confirmationToken,
     })
 
-    // ── Send confirmation email (non-blocking) ────────────────────────────
+    // ── Send confirmation email (non-blocking) ─────────────────────────────
     sendWaitlistJoinedEmail({
       name: String(name).trim(),
       email: cleanEmail,
@@ -153,7 +156,7 @@ export async function POST(request: Request) {
       { status: 201 },
     )
   } catch (err: any) {
-    console.error('[waitlist] Error:', err)
+    console.error('[waitlist POST] Error:', err)
     return NextResponse.json(
       {
         error: 'Failed to join waitlist.',

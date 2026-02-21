@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Send } from 'lucide-react'
-import { FaTwitter, FaLinkedinIn, FaInstagram, FaYoutube } from 'react-icons/fa'
+import { FaTwitter, FaLinkedinIn, FaInstagram } from 'react-icons/fa'
 import { useSmoothScroll } from '@/hooks/useSmoothScroll'
 
 // Map each footer link to its section ID (null = external page)
@@ -16,22 +16,24 @@ const footerLinks: Record<
     { label: 'Live Masterclass', sectionId: 'programme' },
     { label: 'Virtual Series', sectionId: 'programme' },
     { label: 'Private Consulting', sectionId: 'reserve-access' },
-    { label: 'Trila University', sectionId: 'programme' },
-    { label: 'JaaS Certification', sectionId: 'programme' },
+    { label: 'JaaS Activation Pack', sectionId: 'activation-pack' },
+    { label: 'Launchpad', sectionId: 'launchpad' },
+    { label: 'Payment Options', sectionId: 'payment-options' },
   ],
   Company: [
-    { label: 'About Trila', sectionId: 'meet-the-experts' },
-    { label: 'Our Team', sectionId: 'meet-the-experts' },
+    { label: 'About Trila x JaaS', sectionId: 'about' },
+    { label: 'Our Team', sectionId: 'team-section' },
+    { label: 'Testimonials', sectionId: 'testimonials' },
+    { label: 'Partners', sectionId: null },
     { label: 'Careers', sectionId: null },
     { label: 'Press & Media', sectionId: null },
-    { label: 'Partners', sectionId: null },
   ],
   Support: [
     { label: 'Help Center', sectionId: 'contact' },
+    { label: 'Contact Us', sectionId: 'contact' },
     { label: 'Terms of Service', sectionId: null },
     { label: 'Privacy Policy', sectionId: null },
     { label: 'Refund Policy', sectionId: null },
-    { label: 'Contact Us', sectionId: 'contact' },
   ],
 }
 
@@ -65,23 +67,26 @@ export default function Footer() {
   return (
     <footer
       id='contact'
-      className='relative bg-[#030810] border-t border-white/6 w-full overflow-hidden'
+      className='relative bg-[#060d19] border-t border-white/5 w-full overflow-hidden'
     >
+      {/* Gradient top line */}
+      <div className='absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-[#0066FF]/30 to-transparent' />
+
       {/* Subtle top glow */}
       <div className='absolute top-0 left-1/2 -translate-x-1/2 w-150 h-30 bg-[#2563eb]/5 blur-[80px] pointer-events-none' />
 
       {/* Main Footer Content */}
       <div className='max-w-7xl mx-auto px-6 lg:px-8 pt-16 pb-10'>
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8'>
-          {/* Col 1 — Brand */}
-          <div className='flex flex-col gap-5'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16'>
+          {/* Col 1-2 — Brand */}
+          <div className='lg:col-span-2 flex flex-col gap-5'>
             {/* Logo scrolls to top */}
             <button
               onClick={() => scrollTo('hero')}
               className='inline-block w-fit focus:outline-none'
               aria-label='Back to top'
             >
-              <div className=' rounded-md px-3 py-1.5'>
+              <div className='rounded-md px-3 py-1.5'>
                 <Image
                   src='/logo.png'
                   alt='Trila Logo'
@@ -93,58 +98,79 @@ export default function Footer() {
             </button>
 
             {/* Tagline */}
-            <p className='text-[13.5px] text-white/40 leading-relaxed max-w-60'>
-              Democratizing access to premium real estate through
-              Joint-Venture-as-a-Service and tokenized ownership.
+            <p className='text-[13.5px] text-white/40 leading-relaxed max-w-sm'>
+              Trila is a pioneer real estate infrastructure company empowering
+              the new generation of entrepreneurs and developers at global scale
+              with fractional ownership, short-term rentals (STR), and
+              Joint-Venture-as-a-Service (JaaS). Serving 200,000+ developers,
+              startups, HNWI &amp; organizations worldwide.
             </p>
 
             {/* Email subscribe */}
-            <form
-              onSubmit={handleSubmit}
-              className='flex items-center gap-2 bg-[#0d1a35]/80 border border-white/10 rounded-xl px-4 py-2.5 focus-within:border-[#2563eb]/40 transition-colors duration-200'
-            >
+            <form onSubmit={handleSubmit} className='relative max-w-sm'>
               <input
                 type='email'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder='Enter your email'
                 required
-                className='flex-1 bg-transparent text-[13px] text-white placeholder:text-white/30 focus:outline-none min-w-0'
+                className='w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-[#0066FF]/50 transition-colors duration-200'
               />
               <button
                 type='submit'
                 aria-label='Subscribe'
-                className='w-8 h-8 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] flex items-center justify-center shrink-0 transition-all duration-200 hover:shadow-[0_0_14px_rgba(37,99,235,0.5)] active:scale-95'
+                className='absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-linear-to-r from-[#0066FF] to-[#0052cc] hover:from-[#0052cc] hover:to-[#003d99] flex items-center justify-center shrink-0 transition-all duration-200 active:scale-95'
               >
                 <Send size={13} className='text-white' />
               </button>
             </form>
           </div>
 
-          {/* Cols 2-4 — Link Groups */}
+          {/* Cols 3-5 — Link Groups */}
           {Object.entries(footerLinks).map(([group, links]) => (
             <div key={group} className='flex flex-col gap-4'>
-              <h4 className='text-white font-bold text-[15px]'>{group}</h4>
+              <h4 className='text-white font-semibold text-sm tracking-wide'>
+                {group}
+              </h4>
               <ul className='flex flex-col gap-3'>
                 {links.map((link) => (
                   <li key={link.label}>
                     {link.sectionId ? (
                       <button
                         onClick={() => handleLinkClick(link.sectionId)}
-                        className='text-[13.5px] text-white/45 hover:text-white/80 transition-colors duration-200 focus:outline-none text-left'
+                        className='text-sm text-white/35 hover:text-white/70 transition-colors duration-200 focus:outline-none text-left'
                       >
                         {link.label}
                       </button>
                     ) : (
                       <Link
                         href='#'
-                        className='text-[13.5px] text-white/45 hover:text-white/80 transition-colors duration-200'
+                        className='text-sm text-white/35 hover:text-white/70 transition-colors duration-200'
                       >
                         {link.label}
                       </Link>
                     )}
                   </li>
                 ))}
+                {/* Contact details beneath Support */}
+                {group === 'Support' && (
+                  <div className='mt-3 flex flex-col gap-2'>
+                    <a
+                      href='mailto:masterclass@trila.pro'
+                      className='text-sm text-white/35 hover:text-white/70 transition-colors duration-200'
+                    >
+                      masterclass@trila.pro
+                    </a>
+                    <a
+                      href='https://wa.me/2347064000854'
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='text-sm text-white/35 hover:text-white/70 transition-colors duration-200'
+                    >
+                      +234 7064000854
+                    </a>
+                  </div>
+                )}
               </ul>
             </div>
           ))}
@@ -152,17 +178,17 @@ export default function Footer() {
       </div>
 
       {/* Divider */}
-      <div className='border-t border-white/6' />
+      <div className='border-t border-white/5' />
 
       {/* Bottom bar */}
-      <div className='max-w-7xl mx-auto px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-4'>
-        <p className='text-[12.5px] text-white/30 text-center sm:text-left'>
-          © 2026 Trila. All rights reserved. Built for the next generation of
-          global landlords.
+      <div className='max-w-7xl mx-auto px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4'>
+        <p className='text-xs text-white/20 text-center sm:text-left'>
+          © 2026 Trila. All rights reserved. Pioneer real estate infrastructure
+          — empowering the next generation.
         </p>
 
         {/* Social Icons */}
-        <div className='flex items-center gap-2.5'>
+        <div className='flex items-center gap-4'>
           {socials.map(({ icon: Icon, href, label }) => (
             <a
               key={label}
@@ -170,7 +196,7 @@ export default function Footer() {
               target='_blank'
               rel='noopener noreferrer'
               aria-label={label}
-              className='w-9 h-9 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 flex items-center justify-center text-white/45 hover:text-white transition-all duration-200'
+              className='w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/30 hover:text-white transition-all duration-200'
             >
               <Icon size={14} />
             </a>
