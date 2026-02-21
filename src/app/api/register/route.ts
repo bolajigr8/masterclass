@@ -20,7 +20,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, email, phone, city } = body
+    const { name, email, phone, city, format } = body
 
     if (!name || !email || !phone) {
       return NextResponse.json(
@@ -31,14 +31,12 @@ export async function POST(request: Request) {
         { status: 400 },
       )
     }
-
     if (!EMAIL_RE.test(email)) {
       return NextResponse.json(
         { error: 'Invalid email format.' },
         { status: 400 },
       )
     }
-
     const cleanPhone = String(phone).replace(/\s+/g, '')
     if (cleanPhone.length < 10) {
       return NextResponse.json(
@@ -46,7 +44,6 @@ export async function POST(request: Request) {
         { status: 400 },
       )
     }
-
     if (String(name).trim().length < 2) {
       return NextResponse.json(
         { error: 'Name must be at least 2 characters.' },
@@ -78,6 +75,8 @@ export async function POST(request: Request) {
       email: email.toLowerCase().trim(),
       phone: cleanPhone,
       city: city ? String(city).trim() : undefined,
+      // format is optional — callers that don't send it leave productType unset
+      productType: format ? String(format).trim() : undefined,
       enrollmentReference,
     })
 
@@ -95,7 +94,6 @@ export async function POST(request: Request) {
     )
   } catch (error: any) {
     console.error('[register] Error:', error)
-
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern ?? {})[0]
       if (field === 'email') {
@@ -109,7 +107,6 @@ export async function POST(request: Request) {
         { status: 409 },
       )
     }
-
     return NextResponse.json(
       {
         error: 'Registration failed. Please try again.',

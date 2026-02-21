@@ -339,8 +339,8 @@ export default function WaitlistConfirmPage() {
           phone: entry.phone,
           city: entry.city,
         }}
-        initialSessionId={entry.sessionId}
-        waitlistToken={entry.confirmationToken}
+        // initialSessionId={entry.sessionId}
+        // waitlistToken={entry.confirmationToken}
       />
     </>
   )
