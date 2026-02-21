@@ -552,6 +552,14 @@ export default function Launchpad() {
                       'linear-gradient(to right, #0052cc, #003d99)'
                     el.style.boxShadow = '0 25px 50px rgba(0,102,255,0.3)'
                   }}
+                  onClick={() =>
+                    scrollTo({
+                      top:
+                        document.getElementById('reserve-access')?.offsetTop ??
+                        0,
+                      behavior: 'smooth',
+                    })
+                  }
                   onMouseLeave={(e) => {
                     const el = e.currentTarget as HTMLButtonElement
                     el.style.background =
@@ -574,6 +582,12 @@ export default function Launchpad() {
                     background: 'rgba(255,255,255,0.04)',
                     border: '1px solid rgba(255,255,255,0.08)',
                   }}
+                  onClick={() =>
+                    scrollTo({
+                      top: document.getElementById('programme')?.offsetTop ?? 0,
+                      behavior: 'smooth',
+                    })
+                  }
                   onMouseEnter={(e) => {
                     ;(e.currentTarget as HTMLButtonElement).style.background =
                       'rgba(255,255,255,0.1)'

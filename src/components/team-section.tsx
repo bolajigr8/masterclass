@@ -2,7 +2,10 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Briefcase, Mail, Linkedin, Twitter, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
+import { Briefcase, Mail, ChevronRight, ChevronUp } from 'lucide-react'
+import { FaTwitter, FaLinkedinIn, FaInstagram } from 'react-icons/fa'
+import { useSmoothScroll } from '@/hooks/useSmoothScroll'
 
 interface TeamMember {
   name: string
@@ -78,7 +81,24 @@ const teamMembers: TeamMember[] = [
   },
 ]
 
+const socialLinks = [
+  { icon: FaTwitter, href: 'https://x.com/Trila_inc', label: 'Twitter' },
+  {
+    icon: FaLinkedinIn,
+    href: 'https://www.linkedin.com/company/trilainc/',
+    label: 'LinkedIn',
+  },
+  {
+    icon: FaInstagram,
+    href: 'https://www.instagram.com/trila_inc/',
+    label: 'Instagram',
+  },
+]
+
 function MemberCard({ member }: { member: TeamMember }) {
+  const [expanded, setExpanded] = useState(false)
+  const { scrollTo } = useSmoothScroll()
+
   return (
     <div className='group bg-white/3 backdrop-blur-sm border border-white/6 rounded-2xl overflow-hidden transition-all duration-500 hover:bg-white/6 hover:border-white/10'>
       <div className='p-8'>
@@ -123,8 +143,12 @@ function MemberCard({ member }: { member: TeamMember }) {
           {member.department}
         </p>
 
-        {/* Bio */}
-        <p className='text-white/50 text-sm leading-relaxed line-clamp-3'>
+        {/* Bio — toggles clamp on click */}
+        <p
+          className={`text-white/50 text-sm leading-relaxed transition-all duration-300 ${
+            expanded ? '' : 'line-clamp-3'
+          }`}
+        >
           {member.bio}
         </p>
 
@@ -152,26 +176,42 @@ function MemberCard({ member }: { member: TeamMember }) {
 
         {/* Footer */}
         <div className='flex items-center justify-between mt-6 pt-5 border-t border-white/5'>
+          {/* Social links — shared for all team members */}
           <div className='flex items-center gap-3'>
-            <button className='w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all'>
-              <Linkedin size={16} />
-            </button>
-            <button className='w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all'>
-              <Twitter size={16} />
-            </button>
-            <button className='w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all'>
-              <Mail size={16} />
-            </button>
+            {socialLinks.map(({ icon: Icon, href, label }) => (
+              <Link
+                key={label}
+                href={href}
+                target='_blank'
+                rel='noopener noreferrer'
+                aria-label={label}
+                className='w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all'
+              >
+                <Icon size={16} />
+              </Link>
+            ))}
           </div>
+
+          {/* Read more / Show less toggle */}
           <button
+            onClick={() => setExpanded((prev) => !prev)}
             className='flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80'
             style={{ color: member.accentColor }}
           >
-            Read more
-            <ChevronRight
-              size={14}
-              className='transition-transform group-hover:translate-x-0.5'
-            />
+            {expanded ? (
+              <>
+                Show less
+                <ChevronUp size={14} className='transition-transform' />
+              </>
+            ) : (
+              <>
+                Read more
+                <ChevronRight
+                  size={14}
+                  className='transition-transform group-hover:translate-x-0.5'
+                />
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -227,6 +267,13 @@ export default function TeamSection() {
               developers at global scale.
             </p>
             <Link
+              onClick={() =>
+                scrollTo({
+                  top:
+                    document.getElementById('reserve-access')?.offsetTop ?? 0,
+                  behavior: 'smooth',
+                })
+              }
               href='#'
               className='inline-block bg-linear-to-r from-[#0066FF] to-[#0052cc] hover:from-[#0052cc] hover:to-[#003d99] text-white font-semibold text-sm px-8 py-3 rounded-full transition-all duration-200 hover:shadow-lg hover:shadow-[#0066FF]/25'
             >
