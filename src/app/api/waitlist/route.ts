@@ -6,25 +6,11 @@ import Waitlist from '@/models/Waitlist'
 import { sendWaitlistJoinedEmail } from '@/lib/email'
 import { findSessionByIdFromDB } from '@/lib/session-db'
 
-/**
- * POST /api/waitlist
- * Body: { name, email, phone, city?, productType, sessionId }
- *
- * Validates the session is genuinely at capacity before adding the user.
- *
- * CAPACITY CHECK (mirrors /api/sessions and /api/reserve):
- *   - counts paymentStatus:'success' confirmed enrollments
- *   - PLUS active manual_paystack reservations within their 24h window
- *   This prevents someone joining the waitlist for a session that still has
- *   reservation-held seats, then immediately getting a "spot available"
- *   notification for a seat that was never actually free.
- */
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { name, email, phone, city, productType, sessionId } = body
 
-    // ── Validate required fields ───────────────────────────────────────────
     if (
       !name?.trim() ||
       !email?.trim() ||
@@ -51,7 +37,6 @@ export async function POST(request: Request) {
 
     await connectToDatabase()
 
-    // ── Resolve session config from DB ─────────────────────────────────────
     const sessionConfig = await findSessionByIdFromDB(sessionId)
     if (!sessionConfig) {
       return NextResponse.json(
@@ -63,28 +48,15 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Capacity check — paid + actively held reservations ─────────────────
-    //
-    // We count both:
-    //   1. Confirmed paid enrollments (paymentStatus: 'success')
-    //   2. Active manual_paystack reservations still within their window
-    //
-    // Without (2), a session with 30 paid + 5 pending reservations out of 35
-    // capacity would appear to have 5 free seats and let users join a "waitlist"
-    // for a session that is actually full (just not all payments completed yet).
-    //
     const now = new Date()
 
     const [paidCount, reservationCount] = await Promise.all([
-      // Confirmed paid enrollments
       Enrollment.countDocuments({
         'selectedSession.sessionId': sessionId,
         paymentStatus: 'success',
         bookingStatus: 'confirmed',
         cancelledAt: { $exists: false },
       }),
-
-      // Active manual reservations (seat held, payment not yet complete)
       Enrollment.countDocuments({
         'selectedSession.sessionId': sessionId,
         reservationType: 'manual_paystack',
@@ -108,7 +80,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Check the user is not already enrolled ─────────────────────────────
     const existingEnrollment = await Enrollment.findOne({
       email: cleanEmail,
       'selectedSession.sessionId': sessionId,
@@ -124,7 +95,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Check for duplicate waitlist entry ─────────────────────────────────
     const existing = await Waitlist.findOne({
       email: cleanEmail,
       sessionId,
@@ -141,7 +111,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Determine next position ────────────────────────────────────────────
     const lastEntry = await Waitlist.findOne(
       { sessionId, status: { $in: ['waiting', 'notified'] } },
       { position: 1 },
@@ -149,10 +118,8 @@ export async function POST(request: Request) {
     )
     const position = (lastEntry?.position ?? 0) + 1
 
-    // ── Generate unique confirmation token ─────────────────────────────────
     const confirmationToken = crypto.randomBytes(32).toString('hex')
 
-    // ── Create waitlist entry ──────────────────────────────────────────────
     await Waitlist.create({
       name: String(name).trim(),
       email: cleanEmail,
@@ -165,14 +132,32 @@ export async function POST(request: Request) {
       confirmationToken,
     })
 
-    // ── Send confirmation email (non-blocking) ─────────────────────────────
-    sendWaitlistJoinedEmail({
-      name: String(name).trim(),
-      email: cleanEmail,
-      productType,
-      sessionLabel: sessionConfig.label,
-      position,
-    }).catch((err) => console.error('[waitlist] Join email failed:', err))
+    // ── Send confirmation email — awaited so failures are visible ──────────
+    // We intentionally do NOT let email failure block the 201 response, but we
+    // log it clearly rather than silently swallowing it.
+    try {
+      await sendWaitlistJoinedEmail({
+        name: String(name).trim(),
+        email: cleanEmail,
+        productType,
+        sessionLabel: sessionConfig.label,
+        position,
+      })
+    } catch (emailErr: any) {
+      // The user is on the waitlist — don't return an error for that.
+      // But log prominently so it's obvious in server logs.
+      console.error(
+        '[waitlist] ⚠️  JOIN CONFIRMATION EMAIL FAILED — user added to waitlist but email not sent.',
+        {
+          email: cleanEmail,
+          productType,
+          sessionId,
+          error: emailErr?.message ?? emailErr,
+          // Surface the SendGrid response body if available
+          responseBody: emailErr?.response?.body ?? null,
+        },
+      )
+    }
 
     return NextResponse.json(
       {
@@ -196,10 +181,6 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * GET /api/waitlist?email=&sessionId=
- * Returns the waitlist position for a given email + session (public).
- */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
