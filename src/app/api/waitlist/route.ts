@@ -10,11 +10,14 @@ import { findSessionByIdFromDB } from '@/lib/session-db'
  * POST /api/waitlist
  * Body: { name, email, phone, city?, productType, sessionId }
  *
- * Validates the session is genuinely at capacity, then adds the user to the
- * waitlist queue. Sends a confirmation email with their position.
+ * Validates the session is genuinely at capacity before adding the user.
  *
- * Session config is now read from MongoDB via findSessionByIdFromDB()
- * instead of the static session-config.ts file.
+ * CAPACITY CHECK (mirrors /api/sessions and /api/reserve):
+ *   - counts paymentStatus:'success' confirmed enrollments
+ *   - PLUS active manual_paystack reservations within their 24h window
+ *   This prevents someone joining the waitlist for a session that still has
+ *   reservation-held seats, then immediately getting a "spot available"
+ *   notification for a seat that was never actually free.
  */
 export async function POST(request: Request) {
   try {
@@ -60,13 +63,38 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Check the session is actually at capacity ──────────────────────────
-    const confirmedCount = await Enrollment.countDocuments({
-      'selectedSession.sessionId': sessionId,
-      paymentStatus: 'success',
-      bookingStatus: 'confirmed',
-      cancelledAt: { $exists: false },
-    })
+    // ── Capacity check — paid + actively held reservations ─────────────────
+    //
+    // We count both:
+    //   1. Confirmed paid enrollments (paymentStatus: 'success')
+    //   2. Active manual_paystack reservations still within their window
+    //
+    // Without (2), a session with 30 paid + 5 pending reservations out of 35
+    // capacity would appear to have 5 free seats and let users join a "waitlist"
+    // for a session that is actually full (just not all payments completed yet).
+    //
+    const now = new Date()
+
+    const [paidCount, reservationCount] = await Promise.all([
+      // Confirmed paid enrollments
+      Enrollment.countDocuments({
+        'selectedSession.sessionId': sessionId,
+        paymentStatus: 'success',
+        bookingStatus: 'confirmed',
+        cancelledAt: { $exists: false },
+      }),
+
+      // Active manual reservations (seat held, payment not yet complete)
+      Enrollment.countDocuments({
+        'selectedSession.sessionId': sessionId,
+        reservationType: 'manual_paystack',
+        paymentWindowStatus: { $in: ['pending', 'reminded'] },
+        reservationExpiresAt: { $gt: now },
+        cancelledAt: { $exists: false },
+      }),
+    ])
+
+    const confirmedCount = paidCount + reservationCount
 
     if (confirmedCount < sessionConfig.capacity) {
       return NextResponse.json(
@@ -203,6 +231,7 @@ export async function GET(request: Request) {
       confirmationExpiresAt: entry.confirmationExpiresAt ?? null,
     })
   } catch (err: any) {
+    console.error('[waitlist GET] Error:', err)
     return NextResponse.json({ error: 'Lookup failed.' }, { status: 500 })
   }
 }

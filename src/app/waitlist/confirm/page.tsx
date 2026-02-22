@@ -271,7 +271,9 @@ export default function WaitlistConfirmPage() {
             <span className='font-semibold text-white/80'>
               {entry.sessionLabel}
             </span>{' '}
-            is now available. Complete payment below to secure your place.
+            is now available. Complete payment below to secure your place (If
+            you have pid already and recieved an email confirmation - please
+            ignore).
           </p>
 
           {/* Countdown */}
@@ -332,15 +334,15 @@ export default function WaitlistConfirmPage() {
       <EnrollmentModal
         isOpen={modalOpen}
         onClose={handleModalClose}
-        initialProduct={entry.productType as ProductType}
-        initialFormData={{
+        waitlistConfirmData={{
           name: entry.name,
           email: entry.email,
           phone: entry.phone,
           city: entry.city,
+          productType: entry.productType as ProductType,
+          sessionId: entry.sessionId,
+          sessionLabel: entry.sessionLabel,
         }}
-        // initialSessionId={entry.sessionId}
-        // waitlistToken={entry.confirmationToken}
       />
     </>
   )
