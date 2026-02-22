@@ -44,6 +44,7 @@ export interface IWaitlist extends Document {
 
   createdAt: Date
   updatedAt: Date
+  convertedAt: Date
 }
 
 const WaitlistSchema = new Schema<IWaitlist>(
@@ -62,7 +63,7 @@ const WaitlistSchema = new Schema<IWaitlist>(
       enum: ['waiting', 'notified', 'converted', 'expired', 'removed'],
       default: 'waiting',
     },
-
+    convertedAt: { type: Date },
     notifiedAt: { type: Date },
     confirmationExpiresAt: { type: Date },
     convertedEnrollmentReference: { type: String },

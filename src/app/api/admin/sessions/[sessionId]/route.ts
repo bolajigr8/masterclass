@@ -4,6 +4,7 @@ import Enrollment from '@/models/Enrollment'
 import { verifyAdminAuth } from '@/lib/adminAuth'
 import SessionConfig from '@/models/Sessionconfig'
 import { buildDisplayTime } from '@/lib/session-db'
+import { promoteWaitlistForSession } from '@/lib/waitlist-helpers'
 
 interface RouteContext {
   params: Promise<{ sessionId: string }>
@@ -71,6 +72,9 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
  *
  * Guard: capacity cannot be reduced below current confirmed enrollment count.
  *
+ * Waitlist promotion: if capacity is increased and waiting entries exist,
+ * the next person(s) in the queue are notified immediately — no cron delay.
+ *
  * Requires: Authorization: Bearer <ADMIN_PASSWORD>
  */
 export async function PUT(request: NextRequest, { params }: RouteContext) {
@@ -92,8 +96,12 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     }
 
     // ── Capacity floor guard ──────────────────────────────────────────────
+    // Only counts confirmed PAID enrollments for the floor — we do not count
+    // pending reservations here because they may expire. We never want to
+    // block a capacity reduction just because someone reserved but didn't pay.
+    let newCapacity: number | undefined
     if (body.capacity !== undefined) {
-      const newCapacity = Number(body.capacity)
+      newCapacity = Number(body.capacity)
       if (isNaN(newCapacity) || newCapacity < 1) {
         return NextResponse.json(
           { error: 'capacity must be a positive number.' },
@@ -146,7 +154,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     if (body.venue !== undefined)
       update.venue = body.venue ? String(body.venue).trim() : undefined
     if (body.isTwoDay !== undefined) update.isTwoDay = Boolean(body.isTwoDay)
-    if (body.capacity !== undefined) update.capacity = Number(body.capacity)
+    if (newCapacity !== undefined) update.capacity = newCapacity
     if (body.isActive !== undefined) update.isActive = Boolean(body.isActive)
     if (body.sortOrder !== undefined) update.sortOrder = Number(body.sortOrder)
 
@@ -162,6 +170,47 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       { $set: update },
       { new: true },
     ).lean()
+
+    // ── Waitlist promotion after capacity increase ─────────────────────────
+    //
+    // If the admin just increased capacity, seats may have opened immediately.
+    // We check and notify the next person(s) in the waitlist queue right now
+    // rather than waiting for the cron to run.
+    //
+    // We only do this when:
+    //   a) capacity was part of this update (newCapacity is defined)
+    //   b) the new capacity is strictly greater than the old capacity
+    //
+    // Non-blocking — we fire and log but never let a notification failure
+    // prevent the session update response from returning successfully.
+    //
+    if (newCapacity !== undefined && newCapacity > session.capacity) {
+      const finalCapacity = updated?.capacity ?? newCapacity
+      const finalLabel = updated?.label ?? session.label
+
+      promoteWaitlistForSession(sessionId, finalCapacity, finalLabel)
+        .then(({ promoted, errors }) => {
+          if (promoted > 0) {
+            console.log(
+              `[admin/sessions PUT] Capacity increased for "${sessionId}" — ` +
+                `notified ${promoted} waitlist ${promoted === 1 ? 'person' : 'people'}.`,
+            )
+          }
+          if (errors.length > 0) {
+            console.error(
+              `[admin/sessions PUT] Waitlist email errors for "${sessionId}":`,
+              errors,
+            )
+          }
+        })
+        .catch((err) => {
+          // Never crash the response — just log
+          console.error(
+            `[admin/sessions PUT] Waitlist promotion failed for "${sessionId}":`,
+            err,
+          )
+        })
+    }
 
     return NextResponse.json({
       success: true,

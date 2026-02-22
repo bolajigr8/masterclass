@@ -17,6 +17,7 @@ declare global {
 }
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Script from 'next/script'
 import { toast } from 'sonner'
 import {
@@ -37,6 +38,8 @@ import {
   MapPin,
   CalendarDays,
   ExternalLink,
+  Users,
+  ArrowRight,
 } from 'lucide-react'
 import {
   DISPLAY_PRICES,
@@ -226,6 +229,112 @@ function ModalHeader({
           <X size={15} />
         </button>
       )}
+    </div>
+  )
+}
+
+// ─── Session Full card ────────────────────────────────────────────────────────
+
+/**
+ * Shown instead of the pay buttons when all sessions are at capacity.
+ * Replaces the old amber text-only notice with a clear CTA to join the waitlist.
+ */
+function SessionFullCard({
+  session,
+  product,
+  formData,
+  onClose,
+}: {
+  session: LiveSession | null
+  product: ProductType
+  formData: { name: string; email: string; phone: string; city: string }
+  onClose: () => void
+}) {
+  const router = useRouter()
+
+  /**
+   * Navigate to /waitlist, carrying whatever the user has already typed in the
+   * modal form so they never have to re-enter their details.
+   * The waitlist page accepts all params as pre-filled but still editable fields.
+   */
+  const handleJoinWaitlist = () => {
+    const params = new URLSearchParams()
+
+    // Only append non-empty values — the waitlist page handles missing ones
+    const cleanName = formData.name.trim()
+    const cleanEmail = formData.email.trim().toLowerCase()
+    const cleanPhone = formData.phone.replace(/\s+/g, '')
+    const cleanCity = formData.city.trim()
+
+    if (cleanName) params.set('name', cleanName)
+    if (cleanEmail) params.set('email', cleanEmail)
+    if (cleanPhone) params.set('phone', cleanPhone)
+    if (cleanCity) params.set('city', cleanCity)
+
+    // These two are required for the API — always append
+    params.set('productType', product)
+    if (session?.sessionId) params.set('sessionId', session.sessionId)
+    if (session?.label) params.set('sessionLabel', session.label)
+
+    onClose()
+    router.push(`/waitlist?${params.toString()}`)
+  }
+
+  return (
+    <div className='rounded-2xl border border-amber-500/25 bg-[#140f00] overflow-hidden'>
+      {/* Top strip */}
+      <div className='flex items-center gap-2.5 border-b border-amber-500/15 px-5 py-3.5'>
+        <Users size={14} className='shrink-0 text-amber-400' />
+        <p className='text-[12px] font-bold uppercase tracking-[0.12em] text-amber-400/80'>
+          Session at Capacity
+        </p>
+      </div>
+
+      <div className='px-5 py-5 space-y-4'>
+        <div>
+          <p className='text-[14px] font-bold text-white leading-snug'>
+            All seats for{' '}
+            <span className='text-amber-400'>{session?.label ?? product}</span>{' '}
+            are currently filled.
+          </p>
+          <p className='mt-1.5 text-[12px] text-white/45 leading-relaxed'>
+            Join the waitlist and you'll be notified immediately if a seat opens
+            up — either from a cancellation or when a new session date is
+            announced.
+          </p>
+        </div>
+
+        {/* Waitlist count social proof (if available) */}
+        {session && session.waitlistCount > 0 && (
+          <p className='text-[11px] text-white/30'>
+            {session.waitlistCount}{' '}
+            {session.waitlistCount === 1 ? 'person is' : 'people are'} ahead of
+            you on the waitlist for this session.
+          </p>
+        )}
+
+        {/* Primary CTA */}
+        <button
+          type='button'
+          onClick={handleJoinWaitlist}
+          className='flex w-full items-center justify-center gap-2.5 rounded-xl bg-amber-500 px-5 py-3.5 text-[13px] font-bold text-[#0a0800] transition-all hover:bg-amber-400 hover:shadow-[0_0_24px_rgba(245,158,11,0.35)] active:scale-[0.98]'
+        >
+          <Users size={14} />
+          Join the Waitlist
+          <ArrowRight size={13} className='ml-0.5' />
+        </button>
+
+        {/* Secondary: contact directly */}
+        <p className='text-center text-[11px] text-white/30'>
+          or reach us at{' '}
+          <a
+            href='mailto:masterclass@trila.pro'
+            className='text-[#4a9eff] hover:underline'
+          >
+            masterclass@trila.pro
+          </a>
+        </p>
+      </div>
     </div>
   )
 }
@@ -464,7 +573,7 @@ function SuccessView({
           </div>
         )}
 
-        {/* ── CONSULTING: also show Zoom pending (per user instruction "show for all for now") ── */}
+        {/* ── CONSULTING: also show Zoom pending ── */}
         {isConsult && (
           <div className='flex items-start gap-3 rounded-xl border border-[#d4a422]/30 bg-[#1a1200] px-4 py-3'>
             <AlertCircle size={15} className='mt-0.5 shrink-0 text-[#d4a422]' />
@@ -488,7 +597,6 @@ function SuccessView({
             </p>
           </div>
           <div className='divide-y divide-white/5 px-5'>
-            {/* Reference (compact — big display shown above for live) */}
             <div className='flex items-center justify-between gap-3 py-3.5'>
               <span className='text-[12px] text-white/40'>Reference</span>
               <div className='flex items-center gap-2'>
@@ -556,6 +664,10 @@ function SuccessView({
         <p className='text-center text-[12px] text-white/30'>
           A confirmation email will be sent to{' '}
           <span className='text-white/50'>{data.email}</span>
+          {' — '}
+          <span className='text-white/25'>
+            if you don't see it, check your spam folder.
+          </span>
         </p>
       </div>
     </div>
@@ -583,9 +695,7 @@ export default function EnrollmentModal({
 
   // ── Processing animation state ────────────────────────────────────────────
   const [processingStep, setProcessingStep] = useState(0)
-  // Ref stays in sync — avoids stale closure in async verifyPayment
   const processingStepRef = useRef(0)
-  // Holds verified enrollment data when API returns before animation finishes
   const pendingSuccessRef = useRef<EnrollmentSuccessData | null>(null)
 
   // ── Sessions ──────────────────────────────────────────────────────────────
@@ -632,9 +742,6 @@ export default function EnrollmentModal({
       : `Pay ₦${ngnPrice.toLocaleString('en-NG')} with Paystack`
 
   // ── Fetch sessions ────────────────────────────────────────────────────────
-  // Accepts an explicit `forProduct` param so callers can pass the freshly-set
-  // product value directly — avoids stale-closure bugs where the useCallback
-  // was memoised with the previous render's selectedProduct.
   const fetchSessions = useCallback(
     async (forProduct?: ProductType) => {
       const product = forProduct ?? selectedProduct
@@ -648,7 +755,6 @@ export default function EnrollmentModal({
         setAllSessions(map)
 
         if (waitlistConfirmData) {
-          // Waitlist flow — find the exact pre-assigned session
           const flat = Object.values(map).flat()
           setAssignedSession(
             flat.find((s) => s.sessionId === waitlistConfirmData.sessionId) ??
@@ -685,9 +791,6 @@ export default function EnrollmentModal({
     setProcessingStep(0)
     processingStepRef.current = 0
     pendingSuccessRef.current = null
-    // Derive product from props right here — useState init only runs once at
-    // mount so selectedProduct state is stale. fetchSessions is also memoised
-    // on the old selectedProduct, so we pass the value explicitly as an arg.
     const product =
       initialProduct ??
       waitlistConfirmData?.productType ??
@@ -704,9 +807,7 @@ export default function EnrollmentModal({
     }
   }, [isOpen])
 
-  // ── Processing animation — drives the 3-step sequence ─────────────────────
-  // The ref is kept in sync so that verifyPayment (an async closure) always
-  // reads the current step, not the stale captured value.
+  // ── Processing animation ──────────────────────────────────────────────────
   const advanceStep = useCallback((n: number) => {
     processingStepRef.current = n
     setProcessingStep(n)
@@ -730,7 +831,6 @@ export default function EnrollmentModal({
     const t1 = setTimeout(() => advanceStep(1), 900)
     const t2 = setTimeout(() => {
       advanceStep(2)
-      // If the API already returned while we were animating, transition now
       if (pendingSuccessRef.current) {
         transitionToSuccess(pendingSuccessRef.current)
       }
@@ -768,20 +868,17 @@ export default function EnrollmentModal({
       errs.phone = 'Phone number must be at least 10 digits'
     if (!assignedSession)
       errs.session = 'No session available — please try again shortly.'
-    if (assignedSession?.isFull)
+    if (!isWaitlistFlow && assignedSession?.isFull)
       errs.session = 'This session is at full capacity. Please contact support.'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
 
   // ── Verify payment ────────────────────────────────────────────────────────
-  // Runs concurrently with the processing animation.
-  // Uses processingStepRef (not processingStep state) to avoid stale closure.
   const verifyPayment = async (paystackReference: string, ref: string) => {
     try {
       if (!assignedSession) throw new Error('No session assigned.')
 
-      // Run API call + minimum delay in parallel
       const [verifyRes] = await Promise.all([
         fetch('/api/payment/verify', {
           method: 'POST',
@@ -798,40 +895,28 @@ export default function EnrollmentModal({
             isTwoDay: assignedSession.isTwoDay ?? false,
           }),
         }),
-        // Minimum 2.8s — ensures animation always reaches step 2 first
         new Promise<void>((r) => setTimeout(r, 2800)),
       ])
 
       const data = await verifyRes.json()
 
       if (!verifyRes.ok) {
-        // Email sending is non-blocking server-side — the only reason this
-        // fails is a real verification error. Show a toast but still try
-        // to display whatever we got back.
         throw new Error(data.error || 'Verification failed.')
       }
 
       const enrollment = data.enrollment as EnrollmentSuccessData
       pendingSuccessRef.current = enrollment
 
-      // Use the REF (not state) to get current step — avoids stale closure
       if (processingStepRef.current >= 2) {
-        // Animation already finished — transition immediately
         transitionToSuccess(enrollment)
       }
-      // Otherwise the step-2 timer in the animation effect will pick it up
     } catch (err: any) {
-      // Payment already left the user's account via Paystack — never send
-      // them back to the form. Show a non-blocking toast then still resolve
-      // to the success screen using whatever client-side data we have.
-      // The user's enrollment reference (ref) is always available here.
       toast.error('Heads up', {
         description:
           "Payment received. If you don't get a confirmation email within 5 minutes, contact us with your reference below.",
         duration: 12_000,
       })
 
-      // Build best-effort success data from client state
       const tier: EnrollmentSuccessData['accessTier'] =
         selectedProduct === 'Virtual Masterclass'
           ? 'virtual'
@@ -860,7 +945,6 @@ export default function EnrollmentModal({
       }
 
       pendingSuccessRef.current = fallback
-      // Force transition regardless of animation step
       setTimeout(() => {
         setSuccessData(fallback)
         setPaymentDate(formatReceiptDate(new Date()))
@@ -891,7 +975,6 @@ export default function EnrollmentModal({
     setIsProcessing(true)
     setApiError(null)
 
-    // Step 1: register if not already done
     let ref = enrollmentRef
     if (!ref) {
       try {
@@ -931,12 +1014,11 @@ export default function EnrollmentModal({
       }
     }
 
-    // Step 2: open Paystack popup
     try {
       const handler = window.PaystackPop!.setup({
         key: publicKey,
         email: formData.email.trim().toLowerCase(),
-        amount: ngnPrice * 100, // always NGN kobo — currency toggle is display only
+        amount: ngnPrice * 100,
         currency: 'NGN',
         metadata: {
           enrollment_reference: ref,
@@ -1051,7 +1133,13 @@ ${sessionBlock}
       errors[field] ? 'border-red-500/60' : 'border-white/10'
     } bg-[#0d1a35] px-4 py-3 text-[13.5px] text-white placeholder:text-white/25 focus:border-[#2563eb]/60 focus:outline-none focus:ring-1 focus:ring-[#2563eb]/40 hover:border-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed`
 
-  const allFull = !sessionsLoading && !sessionsError && assignedSession?.isFull
+  const isWaitlistFlow = !!waitlistConfirmData
+  const allFull =
+    !isWaitlistFlow &&
+    !sessionsLoading &&
+    !sessionsError &&
+    !!assignedSession &&
+    assignedSession.isFull
   const noSessions = !sessionsLoading && !sessionsError && !assignedSession
   const canPay =
     !isProcessing &&
@@ -1104,66 +1192,70 @@ ${sessionBlock}
                 <ModalHeader product={selectedProduct} onClose={onClose} />
 
                 <div className='px-6 py-6 space-y-5'>
-                  {/* Currency toggle */}
-                  <div>
-                    <p className='mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-white/30'>
-                      Payment Currency
-                    </p>
-                    <div className='flex gap-2'>
-                      {(['USD', 'NGN'] as Currency[]).map((c) => (
-                        <button
-                          key={c}
-                          type='button'
-                          onClick={() => setCurrency(c)}
-                          className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] font-bold transition-all ${
-                            currency === c
-                              ? 'border-[#2563eb] bg-[#2563eb] text-white'
-                              : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/70'
-                          }`}
-                        >
-                          <Globe size={13} />
-                          {c === 'USD' ? 'USD ($)' : 'NGN (₦)'}
-                        </button>
-                      ))}
+                  {/* Currency toggle — hidden when session is full */}
+                  {!allFull && (
+                    <div>
+                      <p className='mb-2 text-[11px] font-bold uppercase tracking-[0.15em] text-white/30'>
+                        Payment Currency
+                      </p>
+                      <div className='flex gap-2'>
+                        {(['USD', 'NGN'] as Currency[]).map((c) => (
+                          <button
+                            key={c}
+                            type='button'
+                            onClick={() => setCurrency(c)}
+                            className={`flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] font-bold transition-all ${
+                              currency === c
+                                ? 'border-[#2563eb] bg-[#2563eb] text-white'
+                                : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/70'
+                            }`}
+                          >
+                            <Globe size={13} />
+                            {c === 'USD' ? 'USD ($)' : 'NGN (₦)'}
+                          </button>
+                        ))}
+                      </div>
+                      <p className='mt-1.5 text-[11px] text-white/30'>
+                        {currency === 'USD'
+                          ? 'US Dollar selected'
+                          : 'Nigerian Naira selected'}
+                        {' · '}Payment processed in NGN via Paystack
+                      </p>
                     </div>
-                    <p className='mt-1.5 text-[11px] text-white/30'>
-                      {currency === 'USD'
-                        ? 'US Dollar selected'
-                        : 'Nigerian Naira selected'}
-                      {' · '}Payment processed in NGN via Paystack
-                    </p>
-                  </div>
+                  )}
 
-                  {/* Amount display */}
-                  <div className='rounded-xl bg-white/5 px-5 py-4'>
-                    <p className='mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white/30'>
-                      Total Amount
-                    </p>
-                    <p className='text-3xl font-extrabold text-white leading-none'>
-                      {displayAmount}
-                    </p>
-                    {sessionsLoading && (
-                      <p className='mt-2 flex items-center gap-1.5 text-[11px] text-white/30'>
-                        <Loader2 size={10} className='animate-spin' />
-                        Finding your session…
+                  {/* Amount display — hidden when session is full */}
+                  {!allFull && (
+                    <div className='rounded-xl bg-white/5 px-5 py-4'>
+                      <p className='mb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white/30'>
+                        Total Amount
                       </p>
-                    )}
-                    {assignedSession && !assignedSession.isFull && (
-                      <p className='mt-2 text-[11px] text-white/40'>
-                        Session:{' '}
-                        <span className='font-semibold text-white/60'>
-                          {assignedSession.label}
-                        </span>
-                        {assignedSession.city &&
-                          assignedSession.city !== 'Online (Zoom)' && (
-                            <span className='text-white/40'>
-                              {' '}
-                              · {assignedSession.city}
-                            </span>
-                          )}
+                      <p className='text-3xl font-extrabold text-white leading-none'>
+                        {displayAmount}
                       </p>
-                    )}
-                  </div>
+                      {sessionsLoading && (
+                        <p className='mt-2 flex items-center gap-1.5 text-[11px] text-white/30'>
+                          <Loader2 size={10} className='animate-spin' />
+                          Finding your session…
+                        </p>
+                      )}
+                      {assignedSession && !assignedSession.isFull && (
+                        <p className='mt-2 text-[11px] text-white/40'>
+                          Session:{' '}
+                          <span className='font-semibold text-white/60'>
+                            {assignedSession.label}
+                          </span>
+                          {assignedSession.city &&
+                            assignedSession.city !== 'Online (Zoom)' && (
+                              <span className='text-white/40'>
+                                {' '}
+                                · {assignedSession.city}
+                              </span>
+                            )}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Form fields */}
                   <div className='space-y-3'>
@@ -1239,7 +1331,7 @@ ${sessionBlock}
                     </div>
                   </div>
 
-                  {/* Session / availability notices */}
+                  {/* ── Availability notices ───────────────────────────── */}
                   {sessionsError && (
                     <div className='flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/8 px-4 py-3'>
                       <AlertCircle
@@ -1257,7 +1349,7 @@ ${sessionBlock}
                       </p>
                     </div>
                   )}
-                  {errors.session && (
+                  {errors.session && !allFull && (
                     <div className='flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3'>
                       <AlertCircle
                         size={14}
@@ -1265,18 +1357,6 @@ ${sessionBlock}
                       />
                       <p className='text-[12px] text-amber-400'>
                         {errors.session}
-                      </p>
-                    </div>
-                  )}
-                  {allFull && !errors.session && (
-                    <div className='flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3'>
-                      <AlertCircle
-                        size={14}
-                        className='shrink-0 text-amber-400'
-                      />
-                      <p className='text-[12px] text-amber-400'>
-                        All upcoming sessions are at capacity. Please contact us
-                        to join the waitlist.
                       </p>
                     </div>
                   )}
@@ -1298,8 +1378,18 @@ ${sessionBlock}
                     </p>
                   )}
 
-                  {/* Product-specific info notice */}
-                  {selectedProduct === 'Virtual Masterclass' && (
+                  {/* ── FULL CAPACITY — replaces pay buttons ───────────── */}
+                  {allFull && (
+                    <SessionFullCard
+                      session={assignedSession}
+                      product={selectedProduct}
+                      formData={formData}
+                      onClose={onClose}
+                    />
+                  )}
+
+                  {/* ── Product info notices (hidden when full) ─────────── */}
+                  {!allFull && selectedProduct === 'Virtual Masterclass' && (
                     <div className='flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/3 px-4 py-3'>
                       <Video
                         size={14}
@@ -1313,114 +1403,121 @@ ${sessionBlock}
                     </div>
                   )}
 
-                  {selectedProduct === 'Signature Live Masterclass' && (
-                    <div className='rounded-xl border border-white/8 bg-white/3 px-4 py-3 space-y-2'>
-                      <div className='flex items-start gap-2.5'>
-                        <MapPin
+                  {!allFull &&
+                    selectedProduct === 'Signature Live Masterclass' && (
+                      <div className='rounded-xl border border-white/8 bg-white/3 px-4 py-3 space-y-2'>
+                        <div className='flex items-start gap-2.5'>
+                          <MapPin
+                            size={14}
+                            className='mt-0.5 shrink-0 text-[#d4a422]'
+                          />
+                          <p className='text-[12px] text-white/45 leading-relaxed'>
+                            {assignedSession?.venue && assignedSession?.city ? (
+                              <>
+                                <span className='text-white/65 font-semibold'>
+                                  {assignedSession.venue},{' '}
+                                  {assignedSession.city}
+                                </span>
+                                {' — '}
+                              </>
+                            ) : null}
+                            Full venue details, check-in instructions, and your
+                            enrollment reference will be sent to your email
+                            after payment.
+                          </p>
+                        </div>
+                        <div className='flex items-start gap-2.5'>
+                          <CalendarDays
+                            size={14}
+                            className='mt-0.5 shrink-0 text-[#d4a422]'
+                          />
+                          <p className='text-[12px] text-white/45 leading-relaxed'>
+                            Your reference is required at the venue entrance on{' '}
+                            <span className='text-white/65 font-semibold'>
+                              both Day 1 and Day 2
+                            </span>
+                            . Save it after payment.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                  {!allFull &&
+                    selectedProduct === 'Private JaaS Consulting' && (
+                      <div className='flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/3 px-4 py-3'>
+                        <ExternalLink
                           size={14}
-                          className='mt-0.5 shrink-0 text-[#d4a422]'
+                          className='mt-0.5 shrink-0 text-[#4a9eff]'
                         />
                         <p className='text-[12px] text-white/45 leading-relaxed'>
-                          {assignedSession?.venue && assignedSession?.city ? (
-                            <>
-                              <span className='text-white/65 font-semibold'>
-                                {assignedSession.venue}, {assignedSession.city}
-                              </span>
-                              {' — '}
-                            </>
-                          ) : null}
-                          Full venue details, check-in instructions, and your
-                          enrollment reference will be sent to your email after
-                          payment.
+                          After payment you'll receive a personal scheduling
+                          link to book your 1-on-1 session with Femi Olawale at
+                          a time that works for you.
                         </p>
                       </div>
-                      <div className='flex items-start gap-2.5'>
-                        <CalendarDays
-                          size={14}
-                          className='mt-0.5 shrink-0 text-[#d4a422]'
-                        />
-                        <p className='text-[12px] text-white/45 leading-relaxed'>
-                          Your reference is required at the venue entrance on{' '}
-                          <span className='text-white/65 font-semibold'>
-                            both Day 1 and Day 2
-                          </span>
-                          . Save it after payment.
-                        </p>
-                      </div>
+                    )}
+
+                  {/* ── Pay buttons (hidden when session is full) ───────── */}
+                  {!allFull && (
+                    <div className='space-y-2.5'>
+                      <button
+                        type='button'
+                        onClick={handleSubmit}
+                        disabled={!canPay}
+                        className='group flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#2563eb] px-6 py-4 text-[14px] font-bold text-white transition-all hover:bg-[#1d4ed8] hover:shadow-[0_0_28px_rgba(37,99,235,0.45)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none'
+                      >
+                        {isProcessing ? (
+                          <>
+                            <Loader2 size={16} className='animate-spin' />{' '}
+                            Processing…
+                          </>
+                        ) : !paystackLoaded ? (
+                          <>
+                            <Loader2 size={16} className='animate-spin' />{' '}
+                            Loading payment…
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard size={16} /> {payButtonLabel}{' '}
+                            <span className='ml-1 opacity-70'>→</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type='button'
+                        onClick={handleSubmit}
+                        disabled={!canPay}
+                        className='group flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#d4a422] px-6 py-4 text-[14px] font-bold text-[#0a0800] transition-all hover:bg-[#c49510] hover:shadow-[0_0_28px_rgba(212,164,34,0.4)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none'
+                      >
+                        <Zap size={16} />
+                        Quick Pay (Instant Confirmation)
+                        <span className='ml-1 opacity-60'>→</span>
+                      </button>
                     </div>
                   )}
 
-                  {selectedProduct === 'Private JaaS Consulting' && (
-                    <div className='flex items-start gap-2.5 rounded-xl border border-white/8 bg-white/3 px-4 py-3'>
-                      <ExternalLink
-                        size={14}
-                        className='mt-0.5 shrink-0 text-[#4a9eff]'
-                      />
-                      <p className='text-[12px] text-white/45 leading-relaxed'>
-                        After payment you'll receive a personal scheduling link
-                        to book your 1-on-1 session with Femi Olawale at a time
-                        that works for you.
+                  {/* Footer links (hidden when full) */}
+                  {!allFull && (
+                    <div className='space-y-2 pb-1'>
+                      <p className='text-center text-[11px] text-white/25'>
+                        256-bit SSL encrypted · PCI DSS compliant · Powered by
+                        Paystack
+                      </p>
+                      <p className='text-center text-[11px]'>
+                        <a
+                          href='/register'
+                          className='text-[#4a9eff] hover:underline'
+                        >
+                          Create an account
+                        </a>
+                        <span className='text-white/25'>
+                          {' '}
+                          to track your bookings & payments
+                        </span>
                       </p>
                     </div>
                   )}
-
-                  {/* Pay buttons */}
-                  <div className='space-y-2.5'>
-                    <button
-                      type='button'
-                      onClick={handleSubmit}
-                      disabled={!canPay}
-                      className='group flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#2563eb] px-6 py-4 text-[14px] font-bold text-white transition-all hover:bg-[#1d4ed8] hover:shadow-[0_0_28px_rgba(37,99,235,0.45)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none'
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 size={16} className='animate-spin' />{' '}
-                          Processing…
-                        </>
-                      ) : !paystackLoaded ? (
-                        <>
-                          <Loader2 size={16} className='animate-spin' /> Loading
-                          payment…
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard size={16} /> {payButtonLabel}{' '}
-                          <span className='ml-1 opacity-70'>→</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      type='button'
-                      onClick={handleSubmit}
-                      disabled={!canPay}
-                      className='group flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#d4a422] px-6 py-4 text-[14px] font-bold text-[#0a0800] transition-all hover:bg-[#c49510] hover:shadow-[0_0_28px_rgba(212,164,34,0.4)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none'
-                    >
-                      <Zap size={16} />
-                      Quick Pay (Instant Confirmation)
-                      <span className='ml-1 opacity-60'>→</span>
-                    </button>
-                  </div>
-
-                  {/* Footer links */}
-                  <div className='space-y-2 pb-1'>
-                    <p className='text-center text-[11px] text-white/25'>
-                      256-bit SSL encrypted · PCI DSS compliant · Powered by
-                      Paystack
-                    </p>
-                    <p className='text-center text-[11px]'>
-                      <a
-                        href='/register'
-                        className='text-[#4a9eff] hover:underline'
-                      >
-                        Create an account
-                      </a>
-                      <span className='text-white/25'>
-                        {' '}
-                        to track your bookings & payments
-                      </span>
-                    </p>
-                  </div>
                 </div>
               </>
             )}

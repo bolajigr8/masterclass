@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/mongodb'
 import Waitlist from '@/models/Waitlist'
-import { findSessionById } from '@/lib/session-config'
-import { sendWaitlistSpotAvailableEmail } from '@/lib/email'
+import { findSessionByIdFromDB } from '@/lib/session-db'
+import { promoteWaitlistForSession } from '@/lib/waitlist-helpers'
 
 /**
  * GET /api/cron/process-waitlist
  *
  * Called every 15 minutes by Vercel Cron.
- * Two jobs in one pass:
- *   1. Expire notifications where the 24h window has passed without confirmation.
- *      Then promote the next 'waiting' person in the queue.
- *   2. (Future) Can also be triggered by cancellations via the admin cancel route.
+ * Finds all 'notified' waitlist entries whose 24h confirmation window has
+ * passed without payment, marks them 'expired', then immediately promotes
+ * the next 'waiting' person in queue for that session.
+ *
+ * Uses the shared promoteWaitlistForSession() helper — same logic as the
+ * admin capacity increase path — so the two code paths can never diverge.
  *
  * Protected by CRON_SECRET.
  */
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trila.co'
-const CONFIRMATION_HOURS = 24
 
 function verifyCronAuth(request: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
 
   try {
-    // ── Step 1: Find all notified entries whose window has passed ───────────
+    // ── Find all notified entries whose window has passed ─────────────────
     const expiredEntries = await Waitlist.find({
       status: 'notified',
       confirmationExpiresAt: { $lt: now },
@@ -49,41 +48,27 @@ export async function GET(request: NextRequest) {
       await entry.save()
       expired++
 
-      // ── Step 2: Promote the next person in the queue for this session ────
-      const next = await Waitlist.findOne(
-        { sessionId: entry.sessionId, status: 'waiting' },
-        null,
-        { sort: { position: 1 } },
-      )
-
-      if (!next) continue
-
-      const sessionConfig = findSessionById(next.sessionId)
-      if (!sessionConfig) continue
-
-      const expiresAt = new Date(
-        now.getTime() + CONFIRMATION_HOURS * 60 * 60 * 1000,
-      )
-      next.status = 'notified'
-      next.notifiedAt = now
-      next.confirmationExpiresAt = expiresAt
-      await next.save()
-
-      const confirmUrl = `${APP_URL}/waitlist/confirm?token=${next.confirmationToken}`
-
-      try {
-        await sendWaitlistSpotAvailableEmail({
-          name: next.name,
-          email: next.email,
-          productType: next.productType,
-          sessionLabel: sessionConfig.label,
-          confirmUrl,
-          expiresInHours: CONFIRMATION_HOURS,
-        })
-        promoted++
-      } catch (err: any) {
-        errors.push(`Email failed for ${next.email}: ${err.message}`)
+      // ── Promote the next waiting person for this session ──────────────
+      // We load the session config to get the current capacity and label,
+      // then delegate to the shared helper which correctly accounts for
+      // paid enrollments, active reservations, and already-notified entries
+      // before deciding how many (if any) people to promote.
+      const sessionConfig = await findSessionByIdFromDB(entry.sessionId)
+      if (!sessionConfig) {
+        errors.push(
+          `Session config not found for sessionId: ${entry.sessionId}`,
+        )
+        continue
       }
+
+      const result = await promoteWaitlistForSession(
+        entry.sessionId,
+        sessionConfig.capacity,
+        sessionConfig.label,
+      )
+
+      promoted += result.promoted
+      errors.push(...result.errors)
     }
 
     return NextResponse.json({
@@ -107,7 +92,9 @@ export async function GET(request: NextRequest) {
  * Body: { sessionId }
  *
  * Called internally when a cancellation frees a spot immediately.
- * Same logic as GET but triggered ad-hoc rather than on a schedule.
+ * Same promotion logic as GET but triggered ad-hoc for a specific session.
+ *
+ * Protected by INTERNAL_API_SECRET header.
  */
 export async function POST(request: Request) {
   const authHeader = request.headers.get('x-internal-secret')
@@ -122,44 +109,20 @@ export async function POST(request: Request) {
 
   await connectToDatabase()
 
-  const now = new Date()
-  const sessionConfig = findSessionById(sessionId)
+  const sessionConfig = await findSessionByIdFromDB(sessionId)
   if (!sessionConfig) {
     return NextResponse.json({ error: 'Session not found.' }, { status: 404 })
   }
 
-  const next = await Waitlist.findOne({ sessionId, status: 'waiting' }, null, {
-    sort: { position: 1 },
-  })
-
-  if (!next) {
-    return NextResponse.json({
-      success: true,
-      message: 'No one on waitlist for this session.',
-    })
-  }
-
-  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-  next.status = 'notified'
-  next.notifiedAt = now
-  next.confirmationExpiresAt = expiresAt
-  await next.save()
-
-  const confirmUrl = `${APP_URL}/waitlist/confirm?token=${next.confirmationToken}`
-
-  await sendWaitlistSpotAvailableEmail({
-    name: next.name,
-    email: next.email,
-    productType: next.productType,
-    sessionLabel: sessionConfig.label,
-    confirmUrl,
-    expiresInHours: 24,
-  })
+  const { promoted, errors } = await promoteWaitlistForSession(
+    sessionId,
+    sessionConfig.capacity,
+    sessionConfig.label,
+  )
 
   return NextResponse.json({
     success: true,
-    notified: next.email,
-    position: next.position,
-    expiresAt: expiresAt.toISOString(),
+    promoted,
+    errors: errors.length > 0 ? errors : undefined,
   })
 }

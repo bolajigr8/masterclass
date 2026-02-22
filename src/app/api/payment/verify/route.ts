@@ -7,6 +7,7 @@ import {
   sendFullAccessConfirmation,
   sendConsultingConfirmation,
 } from '@/lib/email'
+import Waitlist from '@/models/Waitlist'
 
 type PaystackVerifyResponse = {
   status: boolean
@@ -193,6 +194,21 @@ export async function POST(request: Request) {
     }
 
     await enrollment.save()
+
+    // ── Mark waitlist entry as converted (non-blocking) ──────────────────────
+    Waitlist.findOneAndUpdate(
+      {
+        sessionId,
+        email: enrollment.email,
+        status: 'notified',
+      },
+      {
+        status: 'converted',
+        convertedAt: new Date(),
+      },
+    ).catch((err) =>
+      console.error('[payment/verify] Waitlist conversion update failed:', err),
+    )
 
     // ── Dispatch confirmation email (awaited, fails gracefully) ──────────────
     const emailParams = {

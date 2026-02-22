@@ -40,7 +40,7 @@ function base(content: string): string {
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#0f1b2d 0%,#1a2d4a 100%);padding:28px 32px;border-bottom:1px solid #1e3050;">
-              <p style="margin:0;color:#4a9eff;font-size:13px;font-weight:bold;letter-spacing:0.15em;text-transform:uppercase;">Trila · JaaS Masterclass</p>
+              <p style="margin:0;color:#4a9eff;font-size:13px;font-weight:bold;letter-spacing:0.15em;text-transform:uppercase;">Trila Masterclass</p>
             </td>
           </tr>
           <!-- Body -->
@@ -729,4 +729,298 @@ export async function sendAdminNotificationBlast(
       }),
     )
   }
+}
+
+/**
+ * ─── RESERVATION EMAIL TEMPLATES ─────────────────────────────────────────────
+ *
+ * Append these exports to the bottom of your existing lib/email.ts file.
+ *
+ * All helpers (base, infoBox, alertBox, primaryButton, sendEmail,
+ * FROM_EMAIL, FROM_NAME) are already defined in that file — do not
+ * re-declare them here. This file shows only the new additions.
+ *
+ * HOW TO INTEGRATE:
+ *   Copy everything from "// ─── 11." onwards into the bottom of lib/email.ts
+ */
+
+// ─── Shared ───────────────────────────────────────────────────────────────────
+
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trila.co'
+
+function buildReservationPaymentUrl(token: string): string {
+  return `${APP_BASE_URL}/reserve/confirm?token=${token}`
+}
+
+function formatExpiry(date: Date): string {
+  return (
+    date.toLocaleString('en-NG', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Africa/Lagos',
+    }) + ' WAT'
+  )
+}
+
+// ─── 11. Reservation Confirmation (immediate — sent on /api/reserve) ──────────
+
+export interface ReservationConfirmationParams {
+  name: string
+  email: string
+  enrollmentReference: string
+  productType: string
+  sessionLabel: string
+  reservationToken: string
+  expiresAt: Date
+}
+
+export async function sendReservationConfirmation(
+  params: ReservationConfirmationParams,
+): Promise<void> {
+  const {
+    name,
+    email,
+    enrollmentReference,
+    productType,
+    sessionLabel,
+    reservationToken,
+    expiresAt,
+  } = params
+
+  const paymentUrl = buildReservationPaymentUrl(reservationToken)
+  const expiryFormatted = formatExpiry(expiresAt)
+
+  const html = base(`
+    <h2 style="color:#ffffff;margin-top:0;font-size:22px;">
+      Your Seat Is Reserved, ${name}! 🎉
+    </h2>
+    <p style="color:#8aa8c8;line-height:1.7;font-size:15px;">
+      Great news — we've held a spot in
+      <strong style="color:#ffffff;">${productType} — ${sessionLabel}</strong>
+      for you. Your seat is reserved but <strong style="color:#d4a422;">not yet activated</strong>.
+      Complete payment using the link below to secure it.
+    </p>
+
+    ${alertBox(`
+      <p style="margin:0 0 6px;color:#d4a422;font-weight:bold;font-size:14px;">
+        ⚠️ No Zoom Link or Access Code Until Payment Is Complete
+      </p>
+      <p style="margin:0;color:#b08a1a;font-size:13px;line-height:1.6;">
+        Your reservation holds the seat but does not grant access to the session.
+        Once payment is confirmed, you will receive your full access credentials
+        at this email address.
+      </p>
+    `)}
+
+    ${infoBox(`
+      ${infoRow('Programme', productType)}
+      ${infoRow('Session', sessionLabel)}
+      ${infoRow('Reference', `<code style="background:#0d1a2e;padding:3px 8px;border-radius:4px;font-family:monospace;color:#4a9eff;">${enrollmentReference}</code>`)}
+      ${infoRow('Seat Held Until', `<strong style="color:#d4a422;">${expiryFormatted}</strong>`)}
+    `)}
+
+    ${alertBox(
+      `
+      <p style="margin:0 0 16px;color:#4a9eff;font-weight:bold;font-size:15px;">
+        💳 Complete Your Payment
+      </p>
+      <p style="margin:0 0 16px;color:#8aa8c8;font-size:14px;line-height:1.6;">
+        Click the button below to pay securely via <strong style="color:#ffffff;">Paystack</strong>.
+        Your seat is held for <strong style="color:#d4a422;">24 hours</strong> — after that it is
+        automatically released to the next person.
+      </p>
+      <div style="margin-bottom:16px;">
+        ${primaryButton('Complete Payment Now →', paymentUrl)}
+      </div>
+      <p style="margin:0;color:#4a6080;font-size:12px;word-break:break-all;">
+        ${paymentUrl}
+      </p>
+    `,
+      '#4a9eff',
+      '#0a1220',
+    )}
+
+    <div style="background:#0b1828;border:1px solid #1e3050;border-radius:8px;padding:16px 24px;margin:20px 0;">
+      <p style="margin:0 0 10px;color:#5a7a9a;font-size:13px;font-weight:bold;
+                text-transform:uppercase;letter-spacing:0.1em;">What Happens Next</p>
+      <ol style="margin:0;padding-left:20px;color:#8aa8c8;font-size:14px;line-height:2.2;">
+        <li>Click the payment link above</li>
+        <li>Complete checkout via Paystack (card payment)</li>
+        <li>Receive your confirmation email with full access credentials</li>
+      </ol>
+    </div>
+
+    <p style="color:#5a7a9a;font-size:12px;margin-top:24px;line-height:1.6;">
+      If you did not request this reservation, you can safely ignore this email.
+      The seat will be released automatically after 24 hours.
+    </p>
+    <p style="color:#8aa8c8;line-height:1.7;margin-top:16px;font-size:14px;">
+      Best regards,<br/>
+      <strong style="color:#c8d8f0;">The Trila Masterclass Team</strong>
+    </p>
+  `)
+
+  await sendEmail({
+    to: email,
+    from: { email: FROM_EMAIL, name: FROM_NAME },
+    subject: `Seat Reserved — Complete Payment Within 24 Hours · ${productType}`,
+    html,
+  })
+}
+
+// ─── 12. Reservation Reminder (sent ~4h before expiry by cron) ────────────────
+
+export interface ReservationReminderParams {
+  name: string
+  email: string
+  enrollmentReference: string
+  productType: string
+  reservationToken: string
+  expiresAt: Date
+}
+
+export async function sendReservationReminder(
+  params: ReservationReminderParams,
+): Promise<void> {
+  const {
+    name,
+    email,
+    enrollmentReference,
+    productType,
+    reservationToken,
+    expiresAt,
+  } = params
+
+  const paymentUrl = buildReservationPaymentUrl(reservationToken)
+  const expiryFormatted = formatExpiry(expiresAt)
+
+  const html = base(`
+    <h2 style="color:#ffffff;margin-top:0;font-size:22px;">
+      Your Seat Expires Soon, ${name}! ⏰
+    </h2>
+    <p style="color:#8aa8c8;line-height:1.7;font-size:15px;">
+      This is a reminder that your reserved seat in
+      <strong style="color:#ffffff;">${productType}</strong> is about to be released.
+      Complete payment now to keep your spot.
+    </p>
+
+    ${alertBox(
+      `
+      <p style="margin:0 0 10px;color:#d4a422;font-weight:bold;font-size:15px;">
+        ⚠️ Your Seat Expires At: ${expiryFormatted}
+      </p>
+      <p style="margin:0 0 16px;color:#b08a1a;font-size:14px;line-height:1.6;">
+        After this time, your reservation is automatically cancelled and the seat
+        is offered to the next person. Don't lose your spot!
+      </p>
+      <div style="margin-bottom:16px;">
+        ${primaryButton('Complete Payment Now →', paymentUrl)}
+      </div>
+      <p style="margin:0;color:#4a6080;font-size:12px;word-break:break-all;">
+        ${paymentUrl}
+      </p>
+    `,
+      '#d4a422',
+      '#1a1200',
+    )}
+
+    ${infoBox(`
+      ${infoRow('Programme', productType)}
+      ${infoRow('Reference', `<code style="background:#0d1a2e;padding:3px 8px;border-radius:4px;font-family:monospace;color:#4a9eff;">${enrollmentReference}</code>`)}
+      ${infoRow('Expires', `<strong style="color:#d4a422;">${expiryFormatted}</strong>`)}
+    `)}
+
+    <p style="color:#5a7a9a;font-size:12px;margin-top:24px;line-height:1.6;">
+      If you no longer want this seat, no action is needed — it will be released
+      automatically.
+    </p>
+    <p style="color:#8aa8c8;line-height:1.7;margin-top:16px;font-size:14px;">
+      Best regards,<br/>
+      <strong style="color:#c8d8f0;">The Trila Masterclass Team</strong>
+    </p>
+  `)
+
+  await sendEmail({
+    to: email,
+    from: { email: FROM_EMAIL, name: FROM_NAME },
+    subject: `⏰ Your Seat Is About to Expire — Complete Payment Now · ${productType}`,
+    html,
+  })
+}
+
+// ─── 13. Reservation Expired Notification ─────────────────────────────────────
+
+export interface ReservationExpiredParams {
+  name: string
+  email: string
+  productType: string
+}
+
+export async function sendReservationExpired(
+  params: ReservationExpiredParams,
+): Promise<void> {
+  const { name, email, productType } = params
+
+  const reserveUrl = `${APP_BASE_URL}/#reserve-access`
+
+  const html = base(`
+    <h2 style="color:#ffffff;margin-top:0;font-size:22px;">
+      Your Reservation Has Expired
+    </h2>
+    <p style="color:#8aa8c8;line-height:1.7;font-size:15px;">
+      Hi ${name}, your reserved seat in
+      <strong style="color:#ffffff;">${productType}</strong>
+      has been released because the 24-hour payment window elapsed without a
+      completed payment.
+    </p>
+
+    ${alertBox(
+      `
+      <p style="margin:0 0 12px;color:#8aa8c8;font-size:14px;line-height:1.6;">
+        If you are still interested in joining, seats may still be available.
+        Reserve again using the link below — the process takes less than a minute.
+      </p>
+      ${primaryButton('Reserve a New Seat →', reserveUrl)}
+    `,
+      '#4a9eff',
+      '#0a1220',
+    )}
+
+    <div style="background:#0b1828;border:1px solid #1e3050;border-radius:8px;
+                padding:16px 24px;margin:20px 0;">
+      <p style="margin:0 0 10px;color:#5a7a9a;font-size:13px;font-weight:bold;
+                text-transform:uppercase;letter-spacing:0.1em;">Need Help?</p>
+      <p style="margin:0;color:#8aa8c8;font-size:14px;line-height:1.7;">
+        If you experienced a payment issue or need assistance, please reach out to
+        us directly — we are happy to help you secure a spot.
+      </p>
+      <p style="margin:10px 0 0;">
+        <a href="mailto:masterclass@trila.pro"
+           style="color:#4a9eff;font-size:14px;">
+          masterclass@trila.pro
+        </a>
+        &nbsp;·&nbsp;
+        <a href="https://wa.me/2347064000854"
+           style="color:#4a9eff;font-size:14px;">
+          WhatsApp: +234 7064000854
+        </a>
+      </p>
+    </div>
+
+    <p style="color:#8aa8c8;line-height:1.7;margin-top:24px;font-size:14px;">
+      Best regards,<br/>
+      <strong style="color:#c8d8f0;">The Trila Masterclass Team</strong>
+    </p>
+  `)
+
+  await sendEmail({
+    to: email,
+    from: { email: FROM_EMAIL, name: FROM_NAME },
+    subject: `Your Reservation Has Expired — ${productType}`,
+    html,
+  })
 }
