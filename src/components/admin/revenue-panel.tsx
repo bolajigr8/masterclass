@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { TrendingUp, BarChart3, MapPin, RefreshCw } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts'
 import { getRevenueAnalytics, type RevenueAnalytics } from '@/lib/admin/auth'
 
 function fmtNaira(n: number): string {
@@ -9,6 +19,10 @@ function fmtNaira(n: number): string {
   if (n >= 1_000) return `₦${(n / 1_000).toFixed(0)}K`
   return `₦${n.toLocaleString('en-NG')}`
 }
+
+const GOLD = '#d4a422'
+const BLUE = '#2563eb'
+const GREEN = '#16a34a'
 
 function SummaryCard({
   label,
@@ -46,68 +60,32 @@ function SummaryCard({
   )
 }
 
-/** Simple bar chart using pure HTML/CSS — no external chart library needed */
-function BarChart({
-  data,
-  valueKey,
-  labelKey = 'date',
-  color = '#171717',
-  formatValue = String,
-}: {
-  data: Record<string, any>[]
-  valueKey: string
-  labelKey?: string
-  color?: string
-  formatValue?: (v: number) => string
-}) {
-  if (!data || data.length === 0)
-    return (
-      <p className='py-8 text-center font-mono text-xs text-neutral-400'>
-        No data for this period.
-      </p>
-    )
-
-  const max = Math.max(...data.map((d) => d[valueKey] ?? 0), 1)
-
-  // Show last 30 points max
-  const visible = data.slice(-30)
-
+const CustomTooltip = ({ active, payload, label, formatter }: any) => {
+  if (!active || !payload?.length) return null
   return (
-    <div className='space-y-2'>
-      <div className='flex items-end gap-0.5 h-32'>
-        {visible.map((item, i) => {
-          const val = item[valueKey] ?? 0
-          const pct = (val / max) * 100
-          return (
-            <div
-              key={i}
-              className='group relative flex-1 flex flex-col justify-end'
-              title={`${item[labelKey]}: ${formatValue(val)}`}
-            >
-              <div
-                className='w-full rounded-t-sm transition-all group-hover:opacity-80'
-                style={{
-                  height: `${Math.max(pct, val > 0 ? 4 : 0)}%`,
-                  backgroundColor: color,
-                }}
-              />
-              {val > 0 && (
-                <div className='absolute bottom-full left-1/2 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded bg-neutral-900 px-2 py-1 font-mono text-[10px] text-white group-hover:block z-10'>
-                  {formatValue(val)}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-      {/* X-axis labels — show first, middle, last */}
-      <div className='flex justify-between font-mono text-[9px] text-neutral-400'>
-        <span>{visible[0]?.[labelKey]?.slice(5)}</span>
-        <span>
-          {visible[Math.floor(visible.length / 2)]?.[labelKey]?.slice(5)}
-        </span>
-        <span>{visible[visible.length - 1]?.[labelKey]?.slice(5)}</span>
-      </div>
+    <div
+      style={{
+        background: '#111',
+        border: '1px solid #2a2a2a',
+        padding: '8px 14px',
+        fontFamily: 'monospace',
+        borderRadius: 2,
+      }}
+    >
+      <p
+        style={{
+          color: '#666',
+          fontSize: 10,
+          marginBottom: 4,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+        }}
+      >
+        {label}
+      </p>
+      <p style={{ color: '#fff', fontSize: 14, fontWeight: 700, margin: 0 }}>
+        {formatter(payload[0].value)}
+      </p>
     </div>
   )
 }
@@ -122,8 +100,7 @@ export default function RevenuePanel() {
     setLoading(true)
     setError(null)
     try {
-      const result = await getRevenueAnalytics(d)
-      setData(result)
+      setData(await getRevenueAnalytics(d))
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -135,16 +112,34 @@ export default function RevenuePanel() {
     fetchData(days)
   }, [days])
 
+  const hasTimeSeriesData = data?.timeSeries.some(
+    (p) => p.count > 0 || p.revenue > 0,
+  )
+
+  const visibleSeries = (() => {
+    if (!data?.timeSeries) return []
+    const firstNonZero = data.timeSeries.findIndex(
+      (p) => p.count > 0 || p.revenue > 0,
+    )
+    const start =
+      firstNonZero === -1
+        ? Math.max(0, data.timeSeries.length - 14)
+        : Math.max(0, firstNonZero - 2)
+    return data.timeSeries.slice(start)
+  })()
+
   const tierColors: Record<string, string> = {
-    virtual: '#2563eb',
-    full: '#d4a422',
-    consulting: '#16a34a',
+    virtual: BLUE,
+    full: GOLD,
+    consulting: GREEN,
   }
   const tierLabels: Record<string, string> = {
     virtual: 'Virtual Masterclass',
     full: 'Signature Live',
     consulting: 'Consulting',
   }
+
+  const axisTick = { fontFamily: 'monospace', fontSize: 10, fill: '#888' }
 
   return (
     <div className='space-y-8'>
@@ -185,9 +180,25 @@ export default function RevenuePanel() {
         </div>
       )}
 
+      {data && !hasTimeSeriesData && data.summary.totalConfirmed > 0 && (
+        <div className='border-l-4 border-yellow-500 bg-yellow-50 p-4'>
+          <p className='font-mono text-sm text-yellow-900'>
+            {data.summary.totalConfirmed} confirmed enrollment
+            {data.summary.totalConfirmed !== 1 ? 's' : ''} exist outside this
+            window.{' '}
+            <button
+              className='underline font-bold'
+              onClick={() => setDays(365)}
+            >
+              Switch to Last year
+            </button>
+          </p>
+        </div>
+      )}
+
       {data && (
         <>
-          {/* Summary cards */}
+          {/* Summary cards — white, unchanged */}
           <div className='grid grid-cols-2 gap-4 lg:grid-cols-5'>
             <SummaryCard
               label='Total Revenue'
@@ -215,103 +226,224 @@ export default function RevenuePanel() {
             />
           </div>
 
-          {/* Bookings over time chart */}
-          <div className='border-4 border-neutral-900 bg-white'>
-            <div className='border-b-4 border-neutral-900 bg-neutral-950 px-6 py-4'>
-              <div className='flex items-center gap-3'>
-                <BarChart3 className='h-5 w-5 text-white' />
-                <h3 className='font-mono text-sm font-bold uppercase tracking-wider text-white'>
-                  Bookings Over Time
-                </h3>
-              </div>
+          {/* ── Bookings Over Time — dark chart panel ── */}
+          <div className='overflow-hidden rounded-sm border-2 border-neutral-900'>
+            {/* header strip — same dark as summary accent card */}
+            <div className='flex items-center gap-3 bg-neutral-950 px-6 py-4'>
+              <BarChart3 className='h-4 w-4 text-neutral-400' />
+              <span className='font-mono text-xs font-bold uppercase tracking-widest text-white'>
+                Bookings Over Time
+              </span>
             </div>
-            <div className='p-6'>
-              <BarChart
-                data={data.timeSeries}
-                valueKey='count'
-                formatValue={String}
-                color='#171717'
-              />
+            {/* chart body */}
+            <div style={{ background: '#111', padding: '24px 16px 16px 16px' }}>
+              {!hasTimeSeriesData ? (
+                <div
+                  style={{
+                    height: 200,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: '#333',
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    }}
+                  >
+                    No bookings in this period
+                  </span>
+                </div>
+              ) : (
+                <ResponsiveContainer width='100%' height={200}>
+                  <BarChart
+                    data={visibleSeries}
+                    margin={{ top: 4, right: 8, left: -16, bottom: 0 }}
+                    barCategoryGap='35%'
+                  >
+                    <CartesianGrid vertical={false} stroke='#1e1e1e' />
+                    <XAxis
+                      dataKey='date'
+                      tickFormatter={(v) => v.slice(5)}
+                      tick={axisTick}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={axisTick}
+                      tickLine={false}
+                      axisLine={false}
+                      width={32}
+                    />
+                    <Tooltip
+                      content={
+                        <CustomTooltip
+                          formatter={(v: number) => v.toString()}
+                        />
+                      }
+                      cursor={{ fill: '#ffffff06' }}
+                    />
+                    <Bar dataKey='count' radius={[3, 3, 0, 0]} maxBarSize={28}>
+                      {visibleSeries.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={entry.count > 0 ? '#e5e5e5' : '#1e1e1e'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
-          {/* Revenue over time chart */}
-          <div className='border-4 border-neutral-900 bg-white'>
-            <div className='border-b-4 border-neutral-900 bg-neutral-950 px-6 py-4'>
-              <div className='flex items-center gap-3'>
-                <TrendingUp className='h-5 w-5 text-white' />
-                <h3 className='font-mono text-sm font-bold uppercase tracking-wider text-white'>
-                  Revenue Over Time
-                </h3>
-              </div>
+          {/* ── Revenue Over Time — dark chart panel ── */}
+          <div className='overflow-hidden rounded-sm border-2 border-neutral-900'>
+            <div className='flex items-center gap-3 bg-neutral-950 px-6 py-4'>
+              <TrendingUp className='h-4 w-4' style={{ color: GOLD }} />
+              <span className='font-mono text-xs font-bold uppercase tracking-widest text-white'>
+                Revenue Over Time
+              </span>
             </div>
-            <div className='p-6'>
-              <BarChart
-                data={data.timeSeries}
-                valueKey='revenue'
-                formatValue={fmtNaira}
-                color='#2563eb'
-              />
+            <div style={{ background: '#111', padding: '24px 16px 16px 16px' }}>
+              {!hasTimeSeriesData ? (
+                <div
+                  style={{
+                    height: 200,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: '#333',
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    }}
+                  >
+                    No revenue in this period
+                  </span>
+                </div>
+              ) : (
+                <ResponsiveContainer width='100%' height={200}>
+                  <BarChart
+                    data={visibleSeries}
+                    margin={{ top: 4, right: 8, left: -4, bottom: 0 }}
+                    barCategoryGap='35%'
+                  >
+                    <CartesianGrid vertical={false} stroke='#1e1e1e' />
+                    <XAxis
+                      dataKey='date'
+                      tickFormatter={(v) => v.slice(5)}
+                      tick={axisTick}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={(v) => fmtNaira(v)}
+                      tick={axisTick}
+                      tickLine={false}
+                      axisLine={false}
+                      width={54}
+                    />
+                    <Tooltip
+                      content={<CustomTooltip formatter={fmtNaira} />}
+                      cursor={{ fill: '#ffffff06' }}
+                    />
+                    <Bar
+                      dataKey='revenue'
+                      radius={[3, 3, 0, 0]}
+                      maxBarSize={28}
+                    >
+                      {visibleSeries.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={entry.revenue > 0 ? GOLD : '#1e1e1e'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
-          {/* Revenue by tier + Geographic side by side */}
+          {/* ── Revenue by Tier + Geographic — white, unchanged ── */}
           <div className='grid gap-6 lg:grid-cols-2'>
-            {/* By tier */}
-            <div className='border-4 border-neutral-900 bg-white'>
-              <div className='border-b-4 border-neutral-900 bg-neutral-950 px-6 py-4'>
-                <h3 className='font-mono text-sm font-bold uppercase tracking-wider text-white'>
+            <div className='border-2 border-neutral-900 bg-white'>
+              <div className='border-b-2 border-neutral-900 bg-neutral-950 px-6 py-4'>
+                <h3 className='font-mono text-xs font-bold uppercase tracking-widest text-white'>
                   Revenue by Tier
                 </h3>
               </div>
-              <div className='p-6 space-y-4'>
-                {Object.entries(data.revenueByTier).map(([tier, stats]) => {
-                  const pct =
-                    data.summary.totalRevenue > 0
-                      ? (
-                          (stats.revenue / data.summary.totalRevenue) *
-                          100
-                        ).toFixed(1)
-                      : '0'
-                  return (
-                    <div key={tier}>
-                      <div className='mb-1 flex justify-between font-mono text-xs'>
-                        <span className='font-semibold text-neutral-700'>
-                          {tierLabels[tier] ?? tier}
-                        </span>
-                        <span className='text-neutral-500'>
-                          {fmtNaira(stats.revenue)} ({stats.count})
-                        </span>
+              <div className='p-6 space-y-5'>
+                {Object.entries(data.revenueByTier).length === 0 ? (
+                  <p className='font-mono text-xs text-neutral-400'>
+                    No tier data yet.
+                  </p>
+                ) : (
+                  Object.entries(data.revenueByTier).map(([tier, stats]) => {
+                    const pct =
+                      data.summary.totalRevenue > 0
+                        ? (
+                            (stats.revenue / data.summary.totalRevenue) *
+                            100
+                          ).toFixed(1)
+                        : '0'
+                    return (
+                      <div key={tier}>
+                        <div className='mb-2 flex justify-between font-mono text-xs'>
+                          <div className='flex items-center gap-2'>
+                            <div
+                              className='h-2 w-2 rounded-full'
+                              style={{
+                                backgroundColor: tierColors[tier] ?? '#999',
+                              }}
+                            />
+                            <span className='font-semibold text-neutral-700'>
+                              {tierLabels[tier] ?? tier}
+                            </span>
+                          </div>
+                          <span className='text-neutral-500'>
+                            {fmtNaira(stats.revenue)}{' '}
+                            <span className='text-neutral-300'>
+                              ×{stats.count}
+                            </span>
+                          </span>
+                        </div>
+                        <div className='h-1.5 w-full rounded-full bg-neutral-100'>
+                          <div
+                            className='h-1.5 rounded-full transition-all duration-500'
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: tierColors[tier] ?? '#999',
+                            }}
+                          />
+                        </div>
+                        <p className='mt-1 text-right font-mono text-[9px] text-neutral-300'>
+                          {pct}%
+                        </p>
                       </div>
-                      <div className='h-2 w-full rounded-full bg-neutral-200'>
-                        <div
-                          className='h-2 rounded-full transition-all'
-                          style={{
-                            width: `${pct}%`,
-                            backgroundColor: tierColors[tier] ?? '#999',
-                          }}
-                        />
-                      </div>
-                      <p className='mt-0.5 text-right font-mono text-[10px] text-neutral-400'>
-                        {pct}%
-                      </p>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                )}
               </div>
             </div>
 
-            {/* Geographic */}
-            <div className='border-4 border-neutral-900 bg-white'>
-              <div className='border-b-4 border-neutral-900 bg-neutral-950 px-6 py-4'>
+            <div className='border-2 border-neutral-900 bg-white'>
+              <div className='border-b-2 border-neutral-900 bg-neutral-950 px-6 py-4'>
                 <div className='flex items-center gap-3'>
-                  <MapPin className='h-5 w-5 text-white' />
-                  <h3 className='font-mono text-sm font-bold uppercase tracking-wider text-white'>
+                  <MapPin className='h-4 w-4 text-white' />
+                  <h3 className='font-mono text-xs font-bold uppercase tracking-widest text-white'>
                     Geographic Distribution
                   </h3>
                 </div>
               </div>
-              <div className='p-6 space-y-3'>
+              <div className='p-6 space-y-0'>
                 {data.geographic.length === 0 ? (
                   <p className='font-mono text-xs text-neutral-400'>
                     No geographic data yet.
@@ -320,14 +452,14 @@ export default function RevenuePanel() {
                   data.geographic.map((g, i) => (
                     <div
                       key={g.city}
-                      className='flex items-center justify-between border-b border-neutral-100 pb-3 last:border-0 last:pb-0'
+                      className='flex items-center justify-between py-3 border-b border-neutral-100 last:border-0'
                     >
                       <div className='flex items-center gap-3'>
-                        <span className='font-mono text-[11px] font-bold text-neutral-400'>
-                          #{i + 1}
+                        <span className='font-mono text-[10px] font-bold text-neutral-300 w-4'>
+                          {i + 1}
                         </span>
                         <div className='flex items-center gap-2'>
-                          <MapPin className='h-3.5 w-3.5 text-neutral-500' />
+                          <MapPin className='h-3 w-3 text-neutral-400' />
                           <span className='font-mono text-sm font-semibold text-neutral-800'>
                             {g.city}
                           </span>
@@ -335,9 +467,15 @@ export default function RevenuePanel() {
                       </div>
                       <div className='text-right'>
                         <p className='font-mono text-sm font-bold text-neutral-900'>
-                          {g.count} attendee{g.count !== 1 ? 's' : ''}
+                          {g.count}{' '}
+                          <span className='font-normal text-neutral-400 text-xs'>
+                            attendee{g.count !== 1 ? 's' : ''}
+                          </span>
                         </p>
-                        <p className='font-mono text-xs text-neutral-500'>
+                        <p
+                          className='font-mono text-xs font-bold'
+                          style={{ color: GOLD }}
+                        >
                           {fmtNaira(g.revenue)}
                         </p>
                       </div>
