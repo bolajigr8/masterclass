@@ -327,10 +327,10 @@ function ReserveConfirmInner() {
           <p className='text-[12px] text-white/30'>
             Can't find the email? Check your spam folder or contact us at{' '}
             <a
-              href='mailto:masterclass@trila.pro'
+              href='mailto:masterclass@Trila.pro'
               className='text-[#4a9eff] hover:underline'
             >
-              masterclass@trila.pro
+              masterclass@Trila.pro
             </a>
           </p>
         </div>
@@ -360,7 +360,7 @@ function ReserveConfirmInner() {
               </button>
             )}
             <a
-              href='mailto:masterclass@trila.pro'
+              href='mailto:masterclass@Trila.pro'
               className='block w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-[13px] font-semibold text-white/70 hover:text-white hover:bg-white/10 transition-colors'
             >
               Contact Support

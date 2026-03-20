@@ -16,12 +16,12 @@ import {
 } from 'lucide-react'
 
 const INFO_TEXT =
-  'After payment, send proof of transfer to masterclass@trila.pro or WhatsApp +234 7064000854 for instant confirmation.'
+  'After payment, send proof of transfer to masterclass@Trila.pro or WhatsApp +234 7064000854 for instant confirmation.'
 
 const BANK_INSTRUCTIONS = [
   'Transfer the exact amount for your selected tier',
   'Use your full name and email as payment reference',
-  'Send proof of payment to masterclass@trila.pro',
+  'Send proof of payment to masterclass@Trila.pro',
   'Confirmation will be sent within 2–4 business hours',
 ]
 
@@ -80,7 +80,7 @@ const paymentMethods = [
     title: 'Payoneer',
     subtitle: 'International payment',
     fields: [
-      { label: 'Payoneer Email', value: 'payments@trila.pro', copyable: true },
+      { label: 'Payoneer Email', value: 'payments@Trila.pro', copyable: true },
       { label: 'Account Holder', value: 'Trila Technologies Ltd' },
       { label: 'Currency', value: 'USD / EUR / GBP' },
       { label: 'Processing Time', value: '1–2 business days' },
@@ -90,7 +90,7 @@ const paymentMethods = [
       'Select "Make a Payment" and enter the email above',
       'Enter the USD equivalent of your selected tier',
       'Include your full name and tier in the payment note',
-      'Send confirmation screenshot to masterclass@trila.pro',
+      'Send confirmation screenshot to masterclass@Trila.pro',
     ],
   },
   {
@@ -103,7 +103,7 @@ const paymentMethods = [
     title: 'PayPal',
     subtitle: 'International payment',
     fields: [
-      { label: 'PayPal Email', value: 'payments@trila.pro', copyable: true },
+      { label: 'PayPal Email', value: 'payments@Trila.pro', copyable: true },
       { label: 'Account Holder', value: 'Trila Technologies Ltd' },
       { label: 'Currency', value: 'USD / EUR / GBP' },
       { label: 'Processing Time', value: 'Instant – 24 hours' },
@@ -113,7 +113,7 @@ const paymentMethods = [
       'Select "Send Money" → "Paying for goods or services"',
       'Enter the PayPal email above and the USD amount',
       'Add your full name and selected tier in the note',
-      'Send confirmation to masterclass@trila.pro',
+      'Send confirmation to masterclass@Trila.pro',
     ],
   },
 ]
@@ -444,7 +444,7 @@ export default function PaymentOptions() {
                     <p className='text-white/50 text-xs leading-relaxed'>
                       After payment, send proof of transfer to{' '}
                       <span style={{ color: '#4a9eff' }}>
-                        masterclass@trila.pro
+                        masterclass@Trila.pro
                       </span>{' '}
                       or WhatsApp{' '}
                       <span style={{ color: '#4a9eff' }}>+234 7064000854</span>{' '}

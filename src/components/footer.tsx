@@ -41,12 +41,12 @@ const socials = [
   { icon: FaTwitter, href: 'https://x.com/Trila_inc', label: 'Twitter' },
   {
     icon: FaLinkedinIn,
-    href: 'https://www.linkedin.com/company/trilainc/',
+    href: 'https://www.linkedin.com/company/Trilainc/',
     label: 'LinkedIn',
   },
   {
     icon: FaInstagram,
-    href: 'https://www.instagram.com/trila_inc/',
+    href: 'https://www.instagram.com/Trila_inc/',
     label: 'Instagram',
   },
 ]
@@ -156,10 +156,10 @@ export default function Footer() {
                 {group === 'Support' && (
                   <div className='mt-3 flex flex-col gap-2'>
                     <a
-                      href='mailto:masterclass@trila.pro'
+                      href='mailto:masterclass@Trila.pro'
                       className='text-sm text-white/35 hover:text-white/70 transition-colors duration-200'
                     >
-                      masterclass@trila.pro
+                      masterclass@Trila.pro
                     </a>
                     <a
                       href='https://wa.me/2347064000854'

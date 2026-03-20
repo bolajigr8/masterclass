@@ -32,7 +32,7 @@ export const FAQ: React.FC = () => {
     {
       question: 'What if I pay via bank transfer?',
       answer:
-        'Bank transfer payments are processed within 24 hours. After payment, send your receipt to payments@trila.com with your registration details. You will receive confirmation once verified.',
+        'Bank transfer payments are processed within 24 hours. After payment, send your receipt to payments@Trila.com with your registration details. You will receive confirmation once verified.',
     },
     {
       question: 'Can I re-schedule my session?',

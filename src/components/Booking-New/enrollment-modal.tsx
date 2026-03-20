@@ -328,10 +328,10 @@ function SessionFullCard({
         <p className='text-center text-[11px] text-white/30'>
           or reach us at{' '}
           <a
-            href='mailto:masterclass@trila.pro'
+            href='mailto:masterclass@Trila.pro'
             className='text-[#4a9eff] hover:underline'
           >
-            masterclass@trila.pro
+            masterclass@Trila.pro
           </a>
         </p>
       </div>

@@ -22,7 +22,7 @@ import { findSessionByIdFromDB } from '@/lib/session-db'
  */
 
 const ZOOM_LINK =
-  process.env.NEXT_PUBLIC_WEBINAR_LINK ?? 'https://trila.co/webinar'
+  process.env.NEXT_PUBLIC_WEBINAR_LINK ?? 'https://Trila.co/webinar'
 const ZOOM_MEETING_ID = process.env.ZOOM_MEETING_ID
 const ZOOM_PASSCODE = process.env.ZOOM_PASSCODE
 

@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
 
     const csv = [headers.join(','), ...rows].join('\n')
     const timestamp = new Date().toISOString().slice(0, 10)
-    const filename = `trila-enrollments-${timestamp}.csv`
+    const filename = `Trila-enrollments-${timestamp}.csv`
 
     return new NextResponse(csv, {
       status: 200,

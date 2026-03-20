@@ -85,12 +85,12 @@ const socialLinks = [
   { icon: FaTwitter, href: 'https://x.com/Trila_inc', label: 'Twitter' },
   {
     icon: FaLinkedinIn,
-    href: 'https://www.linkedin.com/company/trilainc/',
+    href: 'https://www.linkedin.com/company/Trilainc/',
     label: 'LinkedIn',
   },
   {
     icon: FaInstagram,
-    href: 'https://www.instagram.com/trila_inc/',
+    href: 'https://www.instagram.com/Trila_inc/',
     label: 'Instagram',
   },
 ]

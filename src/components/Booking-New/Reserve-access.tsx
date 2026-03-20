@@ -27,8 +27,8 @@
 //   {
 //     icon: Mail,
 //     label: 'Email',
-//     value: 'masterclass@trila.pro',
-//     href: 'mailto:masterclass@trila.pro',
+//     value: 'masterclass@Trila.pro',
+//     href: 'mailto:masterclass@Trila.pro',
 //   },
 //   {
 //     icon: Phone,
@@ -559,8 +559,8 @@ const contactInfo = [
   {
     icon: Mail,
     label: 'Email',
-    value: 'masterclass@trila.pro',
-    href: 'mailto:masterclass@trila.pro',
+    value: 'masterclass@Trila.pro',
+    href: 'mailto:masterclass@Trila.pro',
   },
   {
     icon: Phone,

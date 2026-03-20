@@ -321,7 +321,7 @@ function WaitlistInner() {
         </p>
         <div className='flex gap-3'>
           <a
-            href='mailto:masterclass@trila.pro'
+            href='mailto:masterclass@Trila.pro'
             className='rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-[13px] font-semibold text-white/70 hover:bg-white/10 transition-colors'
           >
             Contact Support
@@ -358,7 +358,7 @@ function WaitlistInner() {
             Try Again
           </button>
           <a
-            href='mailto:masterclass@trila.pro'
+            href='mailto:masterclass@Trila.pro'
             className='rounded-xl bg-[#2563eb] px-6 py-3 text-[13px] font-bold text-white hover:bg-[#1d4ed8] transition-colors'
           >
             Contact Support
@@ -550,10 +550,10 @@ function WaitlistInner() {
             <p className='text-center text-[11px] text-white/25'>
               Questions?{' '}
               <a
-                href='mailto:masterclass@trila.pro'
+                href='mailto:masterclass@Trila.pro'
                 className='text-white/40 underline hover:text-white/60 transition-colors'
               >
-                masterclass@trila.pro
+                masterclass@Trila.pro
               </a>
             </p>
           </div>

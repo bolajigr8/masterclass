@@ -1,12 +1,12 @@
 import sgMail from '@sendgrid/mail'
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY
-const FROM_EMAIL = process.env.FROM_EMAIL ?? 'noreply@trila.co'
+const FROM_EMAIL = process.env.FROM_EMAIL ?? 'noreply@Trila.co'
 const FROM_NAME = process.env.FROM_NAME ?? 'Trila Masterclass'
-const WEBINAR_LINK = process.env.WEBINAR_LINK ?? 'https://trila.co/webinar'
+const WEBINAR_LINK = process.env.WEBINAR_LINK ?? 'https://Trila.co/webinar'
 const CONSULTING_LINK =
   process.env.CONSULTING_SCHEDULING_LINK ??
-  'https://calendly.com/trila/consulting'
+  'https://calendly.com/Trila/consulting'
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY)
@@ -638,7 +638,7 @@ export interface WaitlistSpotParams {
   email: string
   productType: string
   sessionLabel: string
-  confirmUrl: string // e.g. https://trila.co/waitlist/confirm?token=XXX
+  confirmUrl: string // e.g. https://Trila.co/waitlist/confirm?token=XXX
   expiresInHours: number // always 24
 }
 
@@ -746,7 +746,7 @@ export async function sendAdminNotificationBlast(
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
 
-const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trila.co'
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://Trila.co'
 
 function buildReservationPaymentUrl(token: string): string {
   return `${APP_BASE_URL}/reserve/confirm?token=${token}`
@@ -999,9 +999,9 @@ export async function sendReservationExpired(
         us directly — we are happy to help you secure a spot.
       </p>
       <p style="margin:10px 0 0;">
-        <a href="mailto:masterclass@trila.pro"
+        <a href="mailto:masterclass@Trila.pro"
            style="color:#4a9eff;font-size:14px;">
-          masterclass@trila.pro
+          masterclass@Trila.pro
         </a>
         &nbsp;·&nbsp;
         <a href="https://wa.me/2347064000854"

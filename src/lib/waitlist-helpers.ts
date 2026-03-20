@@ -2,7 +2,7 @@ import Enrollment from '@/models/Enrollment'
 import Waitlist from '@/models/Waitlist'
 import { sendWaitlistSpotAvailableEmail } from '@/lib/email'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://trila.co'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://Trila.co'
 const CONFIRMATION_HOURS = 24
 
 /**

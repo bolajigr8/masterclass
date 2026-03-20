@@ -80,7 +80,7 @@ Copy this into `.env.local` and populate all values before running locally or de
 
 ```bash
 # ── Database ───────────────────────────────────────────────────────
-MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/trila
+MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/Trila
 
 # ── Payments ───────────────────────────────────────────────────────
 NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxxx   # shown to client
@@ -88,7 +88,7 @@ PAYSTACK_SECRET_KEY=sk_live_xxxx               # server-side only, NEVER expose
 
 # ── Email (SendGrid) ───────────────────────────────────────────────
 SENDGRID_API_KEY=SG.xxxx
-FROM_EMAIL=noreply@trila.pro                   # must be verified in SendGrid
+FROM_EMAIL=noreply@Trila.pro                   # must be verified in SendGrid
 
 # ── Admin ──────────────────────────────────────────────────────────
 ADMIN_PASSWORD=your-strong-admin-password      # hashed server-side on each check
@@ -98,7 +98,7 @@ CRON_SECRET=your-random-cron-secret            # Bearer token protecting cron en
 INTERNAL_API_SECRET=your-internal-secret       # Used for cron→API internal calls
 
 # ── App URLs ───────────────────────────────────────────────────────
-NEXT_PUBLIC_APP_URL=https://trila.pro          # Used in email links
+NEXT_PUBLIC_APP_URL=https://Trila.pro          # Used in email links
 
 # ── Virtual Sessions ───────────────────────────────────────────────
 NEXT_PUBLIC_WEBINAR_LINK=https://zoom.us/j/xxx # Zoom join URL for virtual classes
@@ -106,7 +106,7 @@ ZOOM_MEETING_ID=123-456-789                    # Shown in reminder emails
 ZOOM_PASSCODE=abc123                           # Shown in reminder emails
 
 # ── Consulting ─────────────────────────────────────────────────────
-NEXT_PUBLIC_CONSULTING_SCHEDULING_LINK=https://calendly.com/trila/consulting
+NEXT_PUBLIC_CONSULTING_SCHEDULING_LINK=https://calendly.com/Trila/consulting
 ```
 
 > **Security note:** `PAYSTACK_SECRET_KEY` must never be in a `NEXT_PUBLIC_` variable or any client-side code. It is only used in `app/api/payment/verify/route.ts`.
@@ -556,7 +556,7 @@ When editing, capacity cannot be reduced below the current confirmed enrollment 
 ```bash
 # 1. Clone and install
 git clone <repo>
-cd trila-masterclass
+cd Trila-masterclass
 npm install
 
 # 2. Copy env vars

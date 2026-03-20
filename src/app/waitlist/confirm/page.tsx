@@ -197,10 +197,10 @@ export default function WaitlistConfirmPage() {
             You can rejoin the waitlist for this session or another one. If you
             have questions, contact us at{' '}
             <a
-              href='mailto:masterclass@trila.pro'
+              href='mailto:masterclass@Trila.pro'
               className='text-[#4a9eff] underline'
             >
-              masterclass@trila.pro
+              masterclass@Trila.pro
             </a>
             .
           </p>
@@ -230,7 +230,7 @@ export default function WaitlistConfirmPage() {
           {pageState.message}
         </p>
         <a
-          href='mailto:masterclass@trila.pro'
+          href='mailto:masterclass@Trila.pro'
           className='rounded-xl bg-[#2563eb] px-8 py-3 text-sm font-bold text-white hover:bg-[#1d4ed8]'
         >
           Contact Support
@@ -255,7 +255,7 @@ export default function WaitlistConfirmPage() {
         <div className='relative w-full max-w-lg text-center'>
           {/* Branding */}
           <p className='mb-8 font-mono text-sm font-bold uppercase tracking-[0.2em] text-[#4a9eff]'>
-            TRILA Masterclass
+            Trila Masterclass
           </p>
 
           {/* Icon */}
@@ -321,10 +321,10 @@ export default function WaitlistConfirmPage() {
           <p className='mt-8 text-[12px] text-white/20'>
             Questions? Email{' '}
             <a
-              href='mailto:masterclass@trila.pro'
+              href='mailto:masterclass@Trila.pro'
               className='text-white/40 underline'
             >
-              masterclass@trila.pro
+              masterclass@Trila.pro
             </a>
           </p>
         </div>
